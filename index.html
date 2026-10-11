@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Engineering Lab: lessons and notes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap">
+<style>
+  /* One reading column for a phone held in one hand. Home lists everything; one lesson or note per screen. */
+  :root {
+    --bg: #f3f5f8; --panel: #ffffff; --panel2: #e9edf3; --line: #cfd7e3; --code: #eef1f6;
+    --text: #17202b; --dim: #566376; --accent: #0b8f5a; --accent-ink: #ffffff;
+    --blue: #1f5fbf; --warn: #a45a00; --bad: #c0392b; --on-bad: #ffffff;
+    --sans: "IBM Plex Sans", system-ui, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", Consolas, ui-monospace, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1218; --panel: #171c25; --panel2: #1e2531; --line: #2b3444; --code: #0b0e13;
+      --text: #e7ecf3; --dim: #97a3b6; --accent: #5ee0a0; --accent-ink: #06231a;
+      --blue: #6fb3ff; --warn: #ffb454; --bad: #ff6b6b; --on-bad: #2a0606;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 var(--sans); padding-inline: 16px; padding-block: 0 72px; }
+  .page { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  .page > * { min-width: 0; }
+  header.top { padding-block: 24px 0; }
+  .kicker { color: var(--accent); font: 600 13px var(--mono); letter-spacing: 1.5px; text-transform: uppercase; }
+  h1 { font-size: 30px; line-height: 1.15; margin: 4px 0 8px; text-wrap: balance; }
+  h2.section { font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); margin: 14px 0 0; }
+  .lede { color: var(--dim); margin: 0; }
+  a { color: var(--blue); }
+  code { background: var(--panel2); padding: 1px 6px; border-radius: 5px; font: 0.92em var(--mono); overflow-wrap: anywhere; }
+  pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font: 14.5px/1.5 var(--mono); margin: 10px 0; white-space: pre; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); padding: 8px 16px; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+  .card.try { border-left: 4px solid var(--warn); }
+  .card.task { border-left: 4px solid var(--accent); }
+  .card.predict { border-left: 4px solid var(--blue); }
+  .tag { font: 600 12px var(--mono); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .try .tag { color: var(--warn); } .task .tag { color: var(--accent); } .predict .tag { color: var(--blue); }
+  .muted { color: var(--dim); font-size: 14.5px; }
+  .good { color: var(--accent); font-weight: 600; margin-top: 8px; }
+  ol, ul { padding-left: 22px; margin: 8px 0; }
+  textarea { width: 100%; min-height: 84px; background: var(--code); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font: 15px var(--mono); resize: vertical; }
+  details.card summary { cursor: pointer; font-weight: 600; }
+  details.card[open] summary { margin-bottom: 8px; }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .list a { display: flex; gap: 12px; align-items: baseline; text-decoration: none; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .list a .n { font: 600 14px var(--mono); color: var(--accent); flex: none; width: 20px; }
+  .list a b { display: block; line-height: 1.3; }
+  .list a span.s { color: var(--dim); font-size: 14px; }
+  .bar { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-block: 16px 0; }
+  .bar a { text-decoration: none; font-weight: 600; }
+  .stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .stack > * { min-width: 0; }
+</style>
+</head>
+<body>
+<div class="page" id="app"></div>
+
+<script src="week1-game.js"></script>
+<script src="notes.js"></script>
+<script src="widgets.js"></script>
+<script>
+(function () {
+  const WEEK = window.WEEK, NOTES = window.NOTES || [], app = document.getElementById('app');
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  const clean = s => s.replace(/\r/g, '').split('\n').map(l => l.trimEnd()).filter(l => l.trim() !== '');
+  const answered = {};   // predictions made on this visit
+
+  function home() {
+    app.innerHTML = '';
+    const top = el('header', 'top');
+    top.append(el('div', 'kicker', 'Engineering Lab'), el('h1', '', 'Lessons and notes'),
+      el('p', 'lede', 'For reading on a break. The diagrams and predictions work here. The building is done in the lab on the computer.'));
+    app.append(top);
+    app.append(el('h2', 'section', esc(WEEK.title)));
+    const lessons = el('nav', 'list'); lessons.setAttribute('aria-label', 'Lessons');
+    WEEK.missions.forEach((m, i) => {
+      const a = el('a', '', '<span class="n">' + (i + 1) + '</span><span><b>' + esc(m.title) + '</b><span class="s">' + esc(m.skill) + '</span></span>');
+      a.href = '#' + m.id; lessons.append(a);
+    });
+    app.append(lessons);
+    app.append(el('h2', 'section', 'Notes: things I asked about'));
+    const notes = el('nav', 'list'); notes.setAttribute('aria-label', 'Notes');
+    NOTES.forEach(n => {
+      const a = el('a', '', '<span><b>' + esc(n.title) + '</b><span class="s">' + esc(n.date) + '</span></span>');
+      a.href = '#' + n.id; notes.append(a);
+    });
+    if (!NOTES.length) notes.append(el('div', 'card', 'No notes yet.'));
+    app.append(notes);
+  }
+
+  function bar(prev, next) {
+    const b = el('div', 'bar');
+    b.append(el('span', '', '<a href="#home">All lessons and notes</a>'));
+    const right = el('span');
+    if (prev) right.innerHTML += '<a href="#' + prev.id + '">Previous</a>';
+    if (prev && next) right.innerHTML += ' &nbsp;·&nbsp; ';
+    if (next) right.innerHTML += '<a href="#' + next.id + '">Next</a>';
+    b.append(right);
+    return b;
+  }
+
+  function predict(m, i, b) {
+    const key = m.id + ':' + i, card = el('div', 'card predict');
+    function draw() {
+      card.innerHTML = '';
+      card.append(el('div', 'tag', 'Predict'), el('div', '', 'What does this print? Work it out in your head.'), el('pre', '', esc(b.code)));
+      if (!(key in answered)) {
+        const ta = el('textarea'); ta.id = 'p-' + m.id + '-' + i; ta.setAttribute('aria-label', 'Your prediction'); ta.placeholder = 'Type exactly what you think appears on the screen';
+        const go = el('button', 'primary', 'Lock in my answer'); go.type = 'button';
+        go.addEventListener('click', () => { if (!ta.value.trim()) return; answered[key] = ta.value.trim(); draw(); });
+        const row = el('div'); row.style.marginTop = '10px'; row.append(go);
+        card.append(ta, row);
+      } else {
+        const right = clean(answered[key]).join('\n') === clean(b.answer).join('\n');
+        card.append(el('div', 'muted', 'You said'), el('pre', '', esc(answered[key])), el('div', 'muted', 'It prints'), el('pre', '', esc(b.answer)));
+        card.append(el('div', right ? 'good' : 'muted', right ? 'Correct.' : 'Not this time. The walk-through below shows where it went differently.'));
+      }
+    }
+    draw();
+    return card;
+  }
+
+  function lesson(m) {
+    const idx = WEEK.missions.indexOf(m);
+    app.innerHTML = '';
+    app.append(bar(WEEK.missions[idx - 1], WEEK.missions[idx + 1]));
+    const top = el('header');
+    top.append(el('div', 'kicker', 'Lesson ' + (idx + 1) + ' of ' + WEEK.missions.length + ' · ' + esc(m.skill)), el('h1', '', esc(m.title)));
+    app.append(top);
+    const body = el('div', 'stack');
+    m.blocks.forEach((b, i) => {
+      if (b.t === 'say') body.append(el('div', '', b.html));
+      else if (b.t === 'code') body.append(el('pre', '', esc(b.code)));
+      else if (b.t === 'stepper') body.append(Lab.stepper(b, m.id + ':' + i));
+      else if (b.t === 'predict') body.append(predict(m, i, b));
+      else if (b.t === 'deeper') { const d = el('details', 'card'); d.append(el('summary', '', 'Go deeper: ' + esc(b.title)), el('div', '', b.html)); body.append(d); }
+      else if (b.t === 'try' || b.t === 'run') { const c = el('div', 'card try'); c.append(el('div', 'tag', 'Experiment · on your computer'), el('div', '', b.html)); body.append(c); }
+      else if (b.t === 'task') {
+        const c = el('div', 'card task');
+        c.append(el('div', 'tag', (b.timed ? 'Timed challenge' : 'Build') + ' · on your computer'));
+        c.append(el('div', '', b.timed ? 'This one is against the clock. The problem is shown in the lab when you start the timer, so it is not printed here.' : b.html));
+        body.append(c);
+      }
+    });
+    app.append(body);
+    Lab.hydrate(body, {});
+    app.append(bar(WEEK.missions[idx - 1], WEEK.missions[idx + 1]));
+  }
+
+  function note(n) {
+    const idx = NOTES.indexOf(n);
+    app.innerHTML = '';
+    app.append(bar(NOTES[idx - 1], NOTES[idx + 1]));
+    const body = el('div', 'stack');
+    body.append(Lab.noteCard(n));
+    app.append(body);
+    Lab.hydrate(body, {});
+    app.append(bar(NOTES[idx - 1], NOTES[idx + 1]));
+  }
+
+  function route() {
+    const id = location.hash.slice(1);
+    const m = WEEK.missions.find(x => x.id === id), n = NOTES.find(x => x.id === id);
+    if (m) lesson(m); else if (n) note(n); else home();
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>
