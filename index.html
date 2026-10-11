@@ -76,12 +76,14 @@
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   const clean = s => s.replace(/\r/g, '').split('\n').map(l => l.trimEnd()).filter(l => l.trim() !== '');
   const answered = {};   // predictions made on this visit
+  const CONCEPTS = NOTES.filter(n => n.kind === 'concept').sort((a, b) => a.order - b.order);
+  const ASKED = NOTES.filter(n => n.kind !== 'concept');
 
   function home() {
     app.innerHTML = '';
     const top = el('header', 'top');
     top.append(el('div', 'kicker', 'Engineering Lab'), el('h1', '', 'Lessons and notes'),
-      el('p', 'lede', 'For reading on a break. The diagrams and predictions work here. The building is done in the lab on the computer.'));
+      el('p', 'lede', 'For reading on a break or revising at the laptop. The diagrams and predictions work here. The building is done in the lab on the computer.'));
     app.append(top);
     app.append(el('h2', 'section', esc(WEEK.title)));
     const lessons = el('nav', 'list'); lessons.setAttribute('aria-label', 'Lessons');
@@ -90,14 +92,16 @@
       a.href = '#' + m.id; lessons.append(a);
     });
     app.append(lessons);
-    app.append(el('h2', 'section', 'Notes: things I asked about'));
-    const notes = el('nav', 'list'); notes.setAttribute('aria-label', 'Notes');
-    NOTES.forEach(n => {
-      const a = el('a', '', '<span><b>' + esc(n.title) + '</b><span class="s">' + esc(n.date) + '</span></span>');
-      a.href = '#' + n.id; notes.append(a);
+    [['Concept notes: revise a topic', CONCEPTS, true], ['Questions I asked', ASKED, false]].forEach(([title, items, numbered]) => {
+      app.append(el('h2', 'section', title));
+      const nav = el('nav', 'list'); nav.setAttribute('aria-label', title);
+      items.forEach((n, i) => {
+        const a = el('a', '', (numbered ? '<span class="n">' + (i + 1) + '</span>' : '') + '<span><b>' + esc(n.title) + '</b><span class="s">' + esc(numbered ? 'Goes with lesson ' + (i + 1) : n.date) + '</span></span>');
+        a.href = '#' + n.id; nav.append(a);
+      });
+      if (!items.length) nav.append(el('div', 'card', 'Nothing here yet.'));
+      app.append(nav);
     });
-    if (!NOTES.length) notes.append(el('div', 'card', 'No notes yet.'));
-    app.append(notes);
   }
 
   function bar(prev, next) {
@@ -154,20 +158,21 @@
         body.append(c);
       }
     });
+    const concept = CONCEPTS.find(n => n.lesson === m.id);
+    if (concept) body.append(el('div', 'card', 'To revise this topic later: <a href="#' + concept.id + '">' + esc(concept.title) + '</a>'));
     app.append(body);
     Lab.hydrate(body, {});
     app.append(bar(WEEK.missions[idx - 1], WEEK.missions[idx + 1]));
   }
 
   function note(n) {
-    const idx = NOTES.indexOf(n);
+    const group = n.kind === 'concept' ? CONCEPTS : ASKED, idx = group.indexOf(n);
     app.innerHTML = '';
-    app.append(bar(NOTES[idx - 1], NOTES[idx + 1]));
+    app.append(bar(group[idx - 1], group[idx + 1]));
     const body = el('div', 'stack');
-    body.append(Lab.noteCard(n));
+    body.append(Lab.noteCard(n, {}));
     app.append(body);
-    Lab.hydrate(body, {});
-    app.append(bar(NOTES[idx - 1], NOTES[idx + 1]));
+    app.append(bar(group[idx - 1], group[idx + 1]));
   }
 
   function route() {

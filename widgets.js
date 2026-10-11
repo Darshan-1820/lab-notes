@@ -14,6 +14,9 @@
 //   text    type text, see the number and switches behind each character
 //   rgb     three sliders, one pixel
 //   run     a Run button for a file in play/ (data-file)
+//   calc    two whole numbers and a sign, worked out the way Java does it
+//   compound  the short ways to change a box (+=, -=, ++ ...)
+//   stepper a walk-through inside a note: data-ref="name" plus widgets: { name: { code, steps } } on the note
 
 (function () {
   const state = {};   // widget positions, kept while the page stays open
@@ -85,6 +88,18 @@
   .box .n { font: 13px var(--mono, Consolas, monospace); color: var(--dim); }
   .screen { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-height: 62px; font: 15px/1.5 var(--mono, Consolas, monospace); white-space: pre; overflow-x: auto; }
   .stepnote { margin-top: 10px; min-height: 52px; }
+  .wline input[type=number] { width: 110px; }
+  .ops { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .opbtn { padding: 6px 0; width: 40px; font: 600 18px var(--mono, Consolas, monospace); }
+  button.mono { font-family: var(--mono, Consolas, monospace); padding: 8px 12px; }
+  .note details { background: var(--panel2); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+  .note details summary { cursor: pointer; font-weight: 600; }
+  .note table.plain { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  .note table.plain th, .note table.plain td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 15.5px; }
+  .note table.plain th { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); }
+  .note .tablewrap { overflow-x: auto; }
+  .note pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font: 14.5px/1.5 var(--mono, Consolas, monospace); margin: 10px 0; white-space: pre; }
+  .note .bad { color: var(--bad); }
   .wrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
   `;
   const style = document.createElement('style');
@@ -284,22 +299,98 @@
     return card;
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget };
+  // ---- try an arithmetic sign on two whole numbers, the way Java does it ----
+  function calcWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { a: Number(node.dataset.a || 7), b: Number(node.dataset.b || 2), op: node.dataset.op || '/' };
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox';
+    const line = el('div', 'wline');
+    const a = el('input'); a.type = 'number'; a.id = key + '-a'; a.value = st.a; a.setAttribute('aria-label', 'First number');
+    const b = el('input'); b.type = 'number'; b.id = key + '-b'; b.value = st.b; b.setAttribute('aria-label', 'Second number');
+    const ops = el('span', 'ops');
+    const out = el('div');
+    const int = v => Math.max(-2147483648, Math.min(2147483647, Math.trunc(Number(v) || 0)));
+    function draw() {
+      st.a = int(a.value); st.b = int(b.value);
+      ops.innerHTML = '';
+      ['+', '-', '*', '/', '%'].forEach(op => {
+        const bt = btn(op, 'opbtn' + (op === st.op ? ' primary' : ''), () => { st.op = op; draw(); });
+        bt.setAttribute('aria-label', 'Use ' + op);
+        ops.append(bt);
+      });
+      const x = st.a, y = st.b;
+      let result, why = '';
+      if ((st.op === '/' || st.op === '%') && y === 0) {
+        out.innerHTML = '<div class="bitinfo"><b>' + x + ' ' + st.op + ' 0</b></div><div class="bitmsg">Java stops the program here with: ArithmeticException: / by zero. A whole number cannot be divided by zero.</div>';
+        return;
+      }
+      if (st.op === '+') result = (x + y) | 0;
+      if (st.op === '-') result = (x - y) | 0;
+      if (st.op === '*') result = Math.imul(x, y);
+      if (st.op === '/') { result = Math.trunc(x / y); if (x % y !== 0) why = 'On paper ' + x + ' ÷ ' + y + ' is ' + (x / y).toFixed(3).replace(/0+$/, '') + '. With whole numbers Java throws the part after the point away. It does not round.'; }
+      if (st.op === '%') { result = x % y; why = y + ' goes into ' + x + ' ' + Math.trunc(x / y) + ' times, and ' + result + ' is left over.'; }
+      if ((st.op === '+' && result !== x + y) || (st.op === '-' && result !== x - y) || (st.op === '*' && result !== x * y)) why = 'The true answer does not fit in an int, so it rolled over. See the note on the 32 switches.';
+      out.innerHTML = '<div class="bitinfo">' + x + ' ' + st.op + ' ' + y + ' gives <b>' + fmt(result) + '</b></div><div class="bitmsg">' + esc(why) + '</div>';
+    }
+    a.addEventListener('input', draw); b.addEventListener('input', draw);
+    line.append(a, ops, b);
+    node.append(line, out);
+    draw();
+  }
+
+  // ---- the short ways to change a box ----
+  function compoundWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { x: 10, msg: 'Press a button. Each one changes the box and shows the long way of writing it.' };
+    const st = state[key];
+    const moves = [
+      ['x += 5', 'x = x + 5', x => x + 5], ['x -= 3', 'x = x - 3', x => x - 3], ['x *= 2', 'x = x * 2', x => x * 2],
+      ['x /= 2', 'x = x / 2', x => Math.trunc(x / 2)], ['x++', 'x = x + 1', x => x + 1], ['x--', 'x = x - 1', x => x - 1],
+    ];
+    function draw() {
+      node.innerHTML = ''; node.className = 'bitsbox';
+      const boxes = el('div', 'boxes');
+      const bx = el('div', 'box'); bx.append(el('div', 'v', fmt(st.x)), el('div', 'n', 'x')); boxes.append(bx);
+      node.append(boxes, el('div', 'bitmsg', esc(st.msg)));
+      const row = el('div', 'wrow');
+      moves.forEach(([short, long, fn]) => row.append(btn(short, 'mono', () => {
+        const before = st.x; st.x = fn(st.x) | 0;
+        st.msg = short + ';  is short for  ' + long + ';   The box held ' + fmt(before) + ' and now holds ' + fmt(st.x) + '.';
+        draw();
+      })));
+      row.append(btn('Reset', '', () => { st.x = 10; st.msg = ''; draw(); }));
+      node.append(row);
+    }
+    draw();
+  }
+
+  // ---- a walk-through placed inside a note: <div data-widget="stepper" data-ref="name"> + note.widgets.name ----
+  function stepperWidget(node, opts) {
+    const cfg = (opts.configs || {})[node.dataset.ref];
+    if (!cfg) return;
+    node.innerHTML = '';
+    node.append(stepper(cfg, 'ref:' + node.dataset.ref));
+  }
+
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget };
 
   window.Lab = {
     stepper,
     hydrate(root, opts) {
       root.querySelectorAll('[data-widget]').forEach(node => {
+        if (node.dataset.done) return;
         const make = makers[node.dataset.widget];
-        if (make) make(node, opts || {});
+        if (make) { make(node, opts || {}); node.dataset.done = '1'; }
       });
     },
-    noteCard(n) {
+    noteCard(n, opts) {
       const card = el('article', 'card note');
       card.id = n.id;
       card.append(el('h2', '', esc(n.title)), el('div', 'muted', esc(n.date + (n.from ? ' · ' + n.from : ''))));
       if (n.asked) card.append(el('div', 'asked', '<span class="muted">You asked:</span> ' + esc(n.asked)));
       card.append(el('div', '', n.html));
+      window.Lab.hydrate(card, Object.assign({ configs: n.widgets || {} }, opts || {}));
       return card;
     },
   };
