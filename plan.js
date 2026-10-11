@@ -7,7 +7,7 @@ window.PLAN = {
   // Lessons 1 to 5 were all passed on the first night, faster than first planned, so the week was pulled forward.
   week: {
     title: 'Week 1: 12 to 18 October',
-    goal: 'Finish the first stretch of the Arena game, prove it with a rematch, and understand how one card payment travels.',
+    goal: 'Finish the first stretch of the Arena game, prove it with a rematch, and understand how one card payment travels. The days below are the latest, not a waiting line: when something is done early, go straight to the next thing.',
   },
   targets: [
     {
