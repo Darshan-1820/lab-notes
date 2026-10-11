@@ -2,6 +2,7 @@
 // Shared by the lab (index.html) and the phone-friendly notes page (app/notes-site/page.html).
 //
 //   Lab.noteCard(note)          -> an element showing one note
+//   Lab.planView(plan, isDone)  -> the plan page (isDone(missionId) is optional, for ticks)
 //   Lab.stepper(block, key)     -> a line-by-line walk-through of code (block has code[] and steps[])
 //   Lab.hydrate(root, { run })  -> turns every [data-widget] inside root into a working diagram
 //                                  run(file, outputElement) is optional; without it, "run" widgets
@@ -16,6 +17,9 @@
 //   run     a Run button for a file in play/ (data-file)
 //   calc    two whole numbers and a sign, worked out the way Java does it
 //   compound  the short ways to change a box (+=, -=, ++ ...)
+//   compare two numbers with all six comparison questions answered live
+//   loop    set monsterHp and damage, see how many times a while loop runs
+//   flow    a message travelling between parties: data-ref="name" plus widgets: { name: { parties, steps } }
 //   stepper a walk-through inside a note: data-ref="name" plus widgets: { name: { code, steps } } on the note
 
 (function () {
@@ -100,6 +104,26 @@
   .note .tablewrap { overflow-x: auto; }
   .note pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font: 14.5px/1.5 var(--mono, Consolas, monospace); margin: 10px 0; white-space: pre; }
   .note .bad { color: var(--bad); }
+  .note .yes { color: var(--accent); }
+  .bitsbox pre { margin: 0 0 12px; background: transparent; border: 0; padding: 0; font: 15px/1.5 var(--mono, Consolas, monospace); white-space: pre; overflow-x: auto; }
+  .flow .lane { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 6px; }
+  .flow .party { border: 2px solid var(--line); border-radius: 8px; padding: 8px 1px; text-align: center; font-size: clamp(10.5px, 2.9vw, 13px); font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; min-height: 52px; display: grid; place-items: center; }
+  .flow .party.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .flow .track { position: relative; height: 46px; margin: 8px 0 4px; border-top: 2px dashed var(--line); }
+  .flow .pill { position: absolute; top: 8px; transform: translateX(-50%); background: var(--blue); color: var(--bg); border-radius: 99px; padding: 3px 10px; font: 600 12.5px var(--mono, Consolas, monospace); white-space: nowrap; transition: left .7s ease; max-width: 96%; overflow: hidden; text-overflow: ellipsis; }
+  @media (prefers-reduced-motion: reduce) { .flow .pill { transition: none; } }
+  .flowwho { font: 12px var(--mono, Consolas, monospace); letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
+  .flowtitle { font-weight: 700; font-size: 18px; margin: 2px 0 0; }
+  .planwrap { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .plan-h { margin: 0 0 6px; font-size: 21px; line-height: 1.25; }
+  .plan-by { margin: 16px 0 4px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
+  ul.ticks { list-style: none; padding: 0; margin: 0; }
+  ul.ticks li { position: relative; padding: 4px 0 4px 30px; }
+  ul.ticks li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 16px; height: 16px; border: 2px solid var(--line); border-radius: 4px; }
+  ul.ticks li.free::before { border-radius: 50%; }
+  ul.ticks li.done { color: var(--dim); text-decoration: line-through; }
+  ul.ticks li.done::before { background: var(--accent); border-color: var(--accent); }
+  .track-row { padding: 9px 0; border-top: 1px solid var(--line); display: grid; gap: 2px; }
   .wrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
   `;
   const style = document.createElement('style');
@@ -365,6 +389,120 @@
     draw();
   }
 
+  // ---- two numbers, all six comparison questions answered live ----
+  function compareWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { a: Number(node.dataset.a || 35), b: Number(node.dataset.b || 0) };
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox';
+    const line = el('div', 'wline');
+    const a = el('input'); a.type = 'number'; a.id = key + '-a'; a.value = st.a; a.setAttribute('aria-label', 'Left number');
+    const b = el('input'); b.type = 'number'; b.id = key + '-b'; b.value = st.b; b.setAttribute('aria-label', 'Right number');
+    line.append(el('span', '', 'left'), a, el('span', '', 'right'), b);
+    const out = el('div', 'tablewrap');
+    function draw() {
+      st.a = Math.trunc(Number(a.value) || 0); st.b = Math.trunc(Number(b.value) || 0);
+      const rows = [['>', 'greater than', st.a > st.b], ['<', 'less than', st.a < st.b], ['>=', 'at least', st.a >= st.b], ['<=', 'at most', st.a <= st.b], ['==', 'exactly equal', st.a === st.b], ['!=', 'not equal', st.a !== st.b]];
+      out.innerHTML = '<table class="plain"><tr><th>Question</th><th>In words</th><th>Answer</th></tr>' + rows.map(r =>
+        '<tr><td><code>' + st.a + ' ' + esc(r[0]) + ' ' + st.b + '</code></td><td>' + r[1] + '</td><td class="' + (r[2] ? 'yes' : 'bad') + '"><b>' + r[2] + '</b></td></tr>').join('') + '</table>';
+    }
+    a.addEventListener('input', draw); b.addEventListener('input', draw);
+    node.append(line, out);
+    draw();
+  }
+
+  // ---- a while loop you can set up and run: how many rounds does the fight last? ----
+  function loopWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { hp: 60, dmg: 25 };
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox';
+    const line = el('div', 'wline');
+    const hp = el('input'); hp.type = 'number'; hp.id = key + '-hp'; hp.value = st.hp; hp.setAttribute('aria-label', 'Monster HP');
+    const dmg = el('input'); dmg.type = 'number'; dmg.id = key + '-dmg'; dmg.value = st.dmg; dmg.setAttribute('aria-label', 'Damage');
+    line.append(el('span', '', 'monsterHp'), hp, el('span', '', 'damage'), dmg);
+    const out = el('div');
+    function draw() {
+      st.hp = Math.trunc(Number(hp.value) || 0); st.dmg = Math.trunc(Number(dmg.value) || 0);
+      let h = st.hp, round = 0, rows = '';
+      const LIMIT = 1000;
+      while (h > 0 && round < LIMIT) {
+        round++;
+        const before = h; h -= st.dmg;
+        if (round <= 6) rows += '<tr><td>' + round + '</td><td><code>' + before + ' &gt; 0</code> is true</td><td>' + before + ' - ' + st.dmg + ' = <b>' + h + '</b></td></tr>';
+      }
+      let verdict;
+      if (round >= LIMIT) verdict = '<div class="bitmsg">This loop never ends. The damage does not bring monsterHp down, so the question <code>monsterHp &gt; 0</code> is true for ever. Only the first rounds are shown.</div>';
+      else if (round === 0) verdict = '<div class="bitmsg">The loop runs zero times. The question is false at the very first check, so the block is skipped completely.</div>';
+      else verdict = '<div class="bitinfo">The block runs <b>' + round + '</b> time' + (round === 1 ? '' : 's') + '.</div><div class="muted">It stops when the question is asked with monsterHp at ' + h + ', which is not greater than 0.' + (round > 6 ? ' Only the first 6 rounds are shown.' : '') + '</div>';
+      out.innerHTML = (rows ? '<div class="tablewrap"><table class="plain"><tr><th>Round</th><th>The question</th><th>Inside the block</th></tr>' + rows + '</table></div>' : '') + verdict;
+    }
+    hp.addEventListener('input', draw); dmg.addEventListener('input', draw);
+    node.append(el('pre', '', 'while (monsterHp &gt; 0) {\n    monsterHp = monsterHp - damage;\n}'), line, out);
+    draw();
+  }
+
+  // ---- a message travelling between parties: <div data-widget="flow" data-ref="name"> + note.widgets.name ----
+  //   { parties: [{ short, name }], steps: [{ from, to, msg, title, note }] }   from/to are positions in parties
+  function flowWidget(node, opts) {
+    const cfg = (opts.configs || {})[node.dataset.ref];
+    if (!cfg) return;
+    const key = 'flow:' + node.dataset.ref, n = cfg.parties.length;
+    if (state[key] == null) state[key] = 0;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pos = i => ((i + 0.5) / n * 100) + '%';
+    function draw(animate) {
+      const at = state[key], s = cfg.steps[at], last = at === cfg.steps.length - 1;
+      node.innerHTML = ''; node.className = 'bitsbox flow';
+      const lane = el('div', 'lane'); lane.style.setProperty('--n', n);
+      cfg.parties.forEach((p, i) => lane.append(el('div', 'party' + (i === s.from || i === s.to ? ' on' : ''), esc(p.short))));
+      const track = el('div', 'track');
+      const pill = el('div', 'pill', esc(s.msg));
+      pill.style.left = pos(animate && !calm ? s.from : s.to);
+      track.append(pill);
+      node.append(lane, track);
+      if (animate && !calm) requestAnimationFrame(() => requestAnimationFrame(() => { pill.style.left = pos(s.to); }));
+      const who = s.from === s.to ? cfg.parties[s.from].name : cfg.parties[s.from].name + ' to ' + cfg.parties[s.to].name;
+      node.append(el('div', 'flowwho', esc(who)), el('div', 'flowtitle', esc(s.title)), el('div', 'stepnote', esc(s.note)));
+      const row = el('div', 'wrow');
+      const back = btn('Back', '', () => { state[key] = at - 1; draw(false); });
+      back.disabled = at === 0;
+      row.append(back, btn(last ? 'Start again' : 'Next step', 'primary', () => { state[key] = last ? 0 : at + 1; draw(true); }),
+        el('span', 'muted', 'Step ' + (at + 1) + ' of ' + cfg.steps.length));
+      node.append(row);
+    }
+    draw(false);
+  }
+
+  // ---- the plan: this week, how a day is split, the roadmap ----
+  function planView(plan, isDone) {
+    const wrap = el('div', 'planwrap');
+    const week = el('div', 'card');
+    week.append(el('h2', 'plan-h', esc(plan.week.title)), el('p', '', esc(plan.week.goal)));
+    plan.targets.forEach(t => {
+      week.append(el('h3', 'plan-by', esc(t.by)));
+      const ul = el('ul', 'ticks');
+      t.items.forEach(it => {
+        const done = isDone && it.missions && it.missions.every(isDone);
+        ul.append(el('li', done ? 'done' : (it.missions ? 'todo' : 'free'), esc(it.text)));
+      });
+      week.append(ul);
+    });
+    wrap.append(week);
+    const day = el('div', 'card');
+    day.append(el('h2', 'plan-h', 'How one day is split'), el('p', 'muted', 'Different subjects go in different parts of the day, so you never juggle two in one sitting.'));
+    plan.tracks.forEach(t => day.append(el('div', 'track-row', '<b>' + esc(t.name) + '</b><span class="muted">' + esc(t.where + ' · ' + t.time) + '</span><div>' + esc(t.what) + '</div>')));
+    wrap.append(day);
+    const road = el('div', 'card');
+    road.append(el('h2', 'plan-h', 'The roadmap'));
+    plan.roadmap.forEach(r => road.append(el('div', 'track-row', '<b>' + esc(r.when) + '</b><div>' + esc(r.what) + '</div>')));
+    road.append(el('h3', 'plan-by', 'Milestones, each meaning "without help"'));
+    plan.milestones.forEach(r => road.append(el('div', 'track-row', '<b>' + esc(r.when) + '</b><div>' + esc(r.what) + '</div>')));
+    road.append(el('p', 'muted', 'Plan last updated ' + esc(plan.updated) + '. It is reset every Sunday from what actually happened.'));
+    wrap.append(road);
+    return wrap;
+  }
+
   // ---- a walk-through placed inside a note: <div data-widget="stepper" data-ref="name"> + note.widgets.name ----
   function stepperWidget(node, opts) {
     const cfg = (opts.configs || {})[node.dataset.ref];
@@ -373,10 +511,11 @@
     node.append(stepper(cfg, 'ref:' + node.dataset.ref));
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget };
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget };
 
   window.Lab = {
     stepper,
+    planView,
     hydrate(root, opts) {
       root.querySelectorAll('[data-widget]').forEach(node => {
         if (node.dataset.done) return;

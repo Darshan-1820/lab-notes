@@ -12,6 +12,7 @@
 // Two kinds of note:
 //   kind: 'concept'  one per lesson, written like a short lecture for revising. Needs lesson
 //                    (the mission id) and order (its place in the list).
+//   kind: 'payments' the payments track, read on the phone. Needs order.
 //   anything else    an answer to a question he asked. Needs asked (his words).
 
 window.NOTES = [
@@ -295,6 +296,233 @@ System.out.println(2 + 3 + " HP");      // 5 HP</pre>
 <details><summary>A program prints "Gold left: gold". Which kind of bug is it, and what is wrong?</summary><p>A logic error. The name is inside quotes, so Java prints the word and never looks in the box.</p></details>
 <details><summary>Java reports an error on line 8, but line 8 looks perfect. Where do you look?</summary><p>Line 7. Something there was not finished, most often a missing semicolon, quote or bracket.</p></details>
 <details><summary>Why can Java not find logic errors for you?</summary><p>It checks whether the code follows the rules of the language. It has no way to know what you wanted the code to do.</p></details>`,
+  },
+
+  {
+    id: 'concept-if',
+    kind: 'concept', lesson: 'w1m5', order: 5,
+    date: '2026-10-12',
+    title: 'Decisions: if, else, and yes-or-no questions',
+    from: 'Goes with lesson 5: Is it dead yet?',
+    widgets: {
+      'c5-paths': {
+        code: ['int monsterHp = 35;', 'if (monsterHp > 50) {', '    System.out.println("healthy");', '} else if (monsterHp > 0) {', '    System.out.println("hurt");', '} else {', '    System.out.println("down");', '}', 'System.out.println("next turn");'],
+        steps: [
+          { line: 0, vars: { monsterHp: 35 }, out: [], note: 'The box holds 35.' },
+          { line: 1, vars: { monsterHp: 35 }, out: [], note: 'First question: is 35 greater than 50? No. Skip this block.' },
+          { line: 3, vars: { monsterHp: 35 }, out: [], note: 'Second question, asked only because the first was no: is 35 greater than 0? Yes.' },
+          { line: 4, vars: { monsterHp: 35 }, out: ['hurt'], note: 'This block runs.' },
+          { line: 8, vars: { monsterHp: 35 }, out: ['hurt', 'next turn'], note: 'One block has run, so the rest of the chain is skipped. The program carries on below it.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>Until now every statement ran every time. An <code>if</code> lets the program choose: run this block only when a question has the answer yes.</p>
+<pre>if (monsterHp > 0) {
+    System.out.println("The monster is still standing.");
+} else {
+    System.out.println("The monster falls. You win!");
+}</pre>
+<p>The question goes in round brackets. Each block of statements goes in its own curly braces. Exactly one of the two blocks runs, never both and never neither. The <code>else</code> part is optional: without it, a "no" simply skips the block.</p>
+
+<h3>The questions you can ask</h3>
+<p>A question compares two values and its answer is <code>true</code> or <code>false</code>. <b>Try it.</b> Change the numbers. Make them equal and see which answers flip.</p>
+<div data-widget="compare" data-key="c5-compare" data-a="35" data-b="0"></div>
+<p>The edge is where mistakes hide. With 0 on both sides, <code>&gt;</code> says false and <code>&gt;=</code> says true. Whenever you write a comparison, ask yourself what should happen when the two values are exactly equal.</p>
+
+<h3>The answer is a value too</h3>
+<p>True and false can live in a box of their own, of type <code>boolean</code>.</p>
+<pre>boolean alive = monsterHp > 0;
+if (alive) {
+    System.out.println("still fighting");
+}</pre>
+<p>A well-named boolean often makes an <code>if</code> read like a sentence.</p>
+
+<h3>More than two paths</h3>
+<p>Chain the questions with <code>else if</code>. Java asks them from the top and runs the block of the <b>first</b> one that is true. The rest are not even asked.</p>
+<div data-widget="stepper" data-ref="c5-paths"></div>
+<p>Because the first true one wins, the order matters. If the questions above were swapped, 80 HP would print "hurt", since 80 is also greater than 0.</p>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Mistake</th><th>What happens</th></tr>
+<tr><td><code>if (hp = 0)</code> with one equals sign</td><td class="bad">incompatible types: int cannot be converted to boolean</td></tr>
+<tr><td>A semicolon straight after the brackets: <code>if (hp > 10);</code></td><td>No error. The if ends at the semicolon, and the block below it runs every time.</td></tr>
+<tr><td>Leaving out the curly braces</td><td>No error. Only the one statement after the if belongs to it. The next line runs every time, however it is indented.</td></tr>
+<tr><td>Comparing text with <code>==</code></td><td>No error, but unreliable. Text is compared with <code>a.equals(b)</code>. You will see why in week 4.</td></tr>
+<tr><td>Checking after the wrong line</td><td>The if judges the value the box holds at that moment. Put it after the statement that changes the box.</td></tr>
+</table></div>
+<p>Always write the curly braces, even for a single statement. It removes two of these mistakes for good.</p>
+
+<h3>Check yourself</h3>
+<details><summary><code>int hp = 20; hp = hp - 20; if (hp > 0) { ... } else { ... }</code> Which block runs?</summary><p>The else block. The box holds exactly 0, and 0 is not greater than 0.</p></details>
+<details><summary>What is the difference between <code>=</code> and <code>==</code>?</summary><p><code>=</code> stores a value in a box. <code>==</code> asks whether two values are the same, and gives true or false.</p></details>
+<details><summary>In an if, else if, else chain with three blocks, how many blocks can run?</summary><p>Exactly one. With no final else it could also be none.</p></details>
+<details><summary>A shop gives a discount to anyone spending 500 or more. Which sign?</summary><p><code>&gt;=</code>. With <code>&gt;</code>, someone spending exactly 500 would be left out.</p></details>`,
+  },
+  {
+    id: 'concept-while',
+    kind: 'concept', lesson: 'w1m6', order: 6,
+    date: '2026-10-12',
+    title: 'Loops: doing something until a question says stop',
+    from: 'Goes with lesson 6: Fight to the end',
+    widgets: {
+      'c6-count': {
+        code: ['int round = 1;', 'while (round <= 3) {', '    System.out.println("Round " + round);', '    round = round + 1;', '}', 'System.out.println("Done");'],
+        steps: [
+          { line: 0, vars: { round: 1 }, out: [], note: 'Part 1, the start: a box the loop will count with.' },
+          { line: 1, vars: { round: 1 }, out: [], note: 'Part 2, the question: is 1 at most 3? Yes, so go inside.' },
+          { line: 2, vars: { round: 1 }, out: ['Round 1'], note: 'The work.' },
+          { line: 3, vars: { round: 2 }, out: ['Round 1'], note: 'Part 3, the change: without this line the question would stay true for ever.' },
+          { line: 1, vars: { round: 2 }, out: ['Round 1'], note: 'Back to the top. Is 2 at most 3? Yes.' },
+          { line: 2, vars: { round: 2 }, out: ['Round 1', 'Round 2'], note: 'The work.' },
+          { line: 3, vars: { round: 3 }, out: ['Round 1', 'Round 2'], note: 'The change.' },
+          { line: 1, vars: { round: 3 }, out: ['Round 1', 'Round 2'], note: 'Is 3 at most 3? Yes. This is the edge.' },
+          { line: 2, vars: { round: 3 }, out: ['Round 1', 'Round 2', 'Round 3'], note: 'The work.' },
+          { line: 3, vars: { round: 4 }, out: ['Round 1', 'Round 2', 'Round 3'], note: 'The change.' },
+          { line: 1, vars: { round: 4 }, out: ['Round 1', 'Round 2', 'Round 3'], note: 'Is 4 at most 3? No. The loop is over.' },
+          { line: 5, vars: { round: 4 }, out: ['Round 1', 'Round 2', 'Round 3', 'Done'], note: 'The program carries on after the closing brace. Notice the box ended at 4, one past the last round.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>A loop runs the same block of statements again and again. A <code>while</code> loop is an <code>if</code> that goes back to the top and asks its question again.</p>
+<pre>while (monsterHp > 0) {
+    monsterHp = monsterHp - damage;
+}</pre>
+<p>Ask the question. If yes, run the block and come back to ask again. If no, carry on below the closing brace.</p>
+
+<h3>Every loop has three parts</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Part</th><th>What it is</th><th>If you forget it</th></tr>
+<tr><td>The start</td><td>The box the question looks at, set up before the loop</td><td>The loop starts from the wrong place</td></tr>
+<tr><td>The question</td><td>What must be true to go round again</td><td>There is no loop</td></tr>
+<tr><td>The change</td><td>A statement inside the block that moves the box toward "no"</td><td>The loop never ends</td></tr>
+</table></div>
+<div data-widget="stepper" data-ref="c6-count"></div>
+
+<h3>How many times does it run?</h3>
+<p><b>Try it.</b> Start with 60 and 25. Then try 50 and 25: is it two rounds or three? Then set the damage to 0. Then set monsterHp to 0.</p>
+<div data-widget="loop" data-key="c6-loop"></div>
+<p>Three things to take from that:</p>
+<ul>
+<li>A loop can run <b>zero times</b>. The question is asked before the first round.</li>
+<li>If nothing inside moves the box toward "no", the loop is <b>endless</b>. In a terminal you stop a runaway program with Ctrl + C.</li>
+<li>Whether the edge counts decides the last round. Being wrong by exactly one round is so common it has a name: an <b>off-by-one error</b>.</li>
+</ul>
+
+<h3>Why loops matter so much</h3>
+<p>A loop is how a short program does a large amount of work: ten lines can process ten million payments. It is also where a program spends nearly all its time. When software is slow, the cause is almost always a loop that runs more times than it needs to. Counting how many times a loop runs is the beginning of a subject you will meet in week 3.</p>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Mistake</th><th>What happens</th></tr>
+<tr><td>No statement inside that changes the box</td><td>Endless loop</td></tr>
+<tr><td>The change moves the wrong way, for example adding when the question waits for a smaller number</td><td>Endless loop, or one that only ends when the number overflows</td></tr>
+<tr><td><code>&lt;</code> where <code>&lt;=</code> was needed, or the other way round</td><td>One round too few or too many</td></tr>
+<tr><td>A semicolon after the brackets: <code>while (hp > 0);</code></td><td>The loop has an empty body and never ends</td></tr>
+<tr><td>Putting a statement inside the loop that should run once, after it</td><td>It runs every round</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary><code>int n = 0; while (n < 5) { n++; }</code> How many times does the block run, and what is n afterwards?</summary><p>Five times. Afterwards n is 5, the first value for which the question is false.</p></details>
+<details><summary><code>int m = 5; while (m > 5) { ... }</code> How many times does the block run?</summary><p>Zero. 5 is not greater than 5, so the block is skipped at the first check.</p></details>
+<details><summary>A monster has 100 HP and takes 30 damage a round. How many rounds until its HP is 0 or less?</summary><p>Four. After three rounds it has 10 left, so a fourth is needed, which takes it to -20.</p></details>
+<details><summary>Where does the "You win!" message go: inside the loop or after it?</summary><p>After it. The program only gets past the closing brace when the question has become false, which means the monster is down.</p></details>`,
+  },
+
+  // ======================= payments (kind: 'payments', in reading order) =======================
+  {
+    id: 'pay-tap-journey',
+    kind: 'payments', order: 1,
+    date: '2026-10-12',
+    title: 'What happens when you tap a card',
+    from: 'Payments note 1',
+    widgets: {
+      'pay1-auth': {
+        parties: [
+          { short: 'Card', name: 'The card' },
+          { short: 'Shop', name: 'The shop' },
+          { short: "Shop's bank", name: "The shop's bank" },
+          { short: 'Network', name: 'The card network' },
+          { short: "Card's bank", name: "The card's bank" },
+        ],
+        steps: [
+          { from: 0, to: 1, msg: 'tap', title: 'The card meets the terminal', note: 'For less than a second the chip and the terminal talk to each other. The terminal learns the card number, and the chip produces a one-time code that only the real card could make.' },
+          { from: 1, to: 2, msg: 'May I charge 250?', title: 'The shop asks its own bank', note: 'The terminal builds a request: the card number, the amount, who the shop is, and the chip\'s one-time code. It sends this to the bank that the shop has an account with.' },
+          { from: 2, to: 3, msg: 'May I charge 250?', title: 'The shop\'s bank passes it on', note: 'The shop\'s bank has no direct line to every other bank in the world. It hands the request to the card network, the company whose logo is on the card.' },
+          { from: 3, to: 4, msg: 'May I charge 250?', title: 'The network finds the right bank', note: 'The first digits of a card number say which bank gave out the card. The network reads them and delivers the request to that bank.' },
+          { from: 4, to: 4, msg: 'checking...', title: 'The card\'s bank decides', note: 'Is the one-time code genuine? Is the card blocked? Is there enough money or credit? Does this look like fraud? If all is well, the bank sets 250 aside so it cannot be spent twice.' },
+          { from: 4, to: 3, msg: 'Approved', title: 'The answer starts back', note: 'The bank replies "approved" along with an approval code. A "declined" reply travels the same way.' },
+          { from: 3, to: 2, msg: 'Approved', title: 'Back through the network', note: 'The network passes the reply to the shop\'s bank.' },
+          { from: 2, to: 1, msg: 'Approved', title: 'The terminal shows the result', note: 'The shop\'s bank tells the terminal, which shows "Approved" and prints a receipt. The whole round trip usually takes one or two seconds.' },
+        ],
+      },
+      'pay1-settle': {
+        parties: [
+          { short: 'Card', name: 'The cardholder' },
+          { short: 'Shop', name: 'The shop' },
+          { short: "Shop's bank", name: "The shop's bank" },
+          { short: 'Network', name: 'The card network' },
+          { short: "Card's bank", name: "The card's bank" },
+        ],
+        steps: [
+          { from: 1, to: 2, msg: "today's sales", title: 'End of the day: the shop sends its list', note: 'The terminal sends the day\'s approved payments to the shop\'s bank in one batch.' },
+          { from: 2, to: 3, msg: "today's sales", title: 'Clearing, part one', note: 'The shop\'s bank passes the details of every payment to the network.' },
+          { from: 3, to: 4, msg: 'you owe 250', title: 'Clearing, part two', note: 'The network sorts millions of payments by bank and tells each card\'s bank exactly what it owes, and for which cards.' },
+          { from: 4, to: 2, msg: 'money', title: 'Settlement: the money moves', note: 'The card\'s bank pays, and the money reaches the shop\'s bank through the network. Banks settle the totals for the day, not one payment at a time.' },
+          { from: 2, to: 1, msg: 'money, less a fee', title: 'The shop is paid', note: 'The shop\'s bank puts the money in the shop\'s account, usually a day or so after the sale, keeping a small percentage as a fee. That fee is shared between the banks and the network.' },
+          { from: 4, to: 0, msg: 'statement', title: 'The cardholder sees it', note: 'The payment appears on the cardholder\'s statement. On a debit card the money leaves the account. On a credit card it is added to the bill.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>You tap a card for 250 rupees and two seconds later the terminal says Approved. In those two seconds a question travelled to a bank that may be in another city and an answer came back. The shop and that bank have never dealt with each other. This note follows that question.</p>
+
+<h3>Who is involved</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>In plain words</th><th>The term people use</th><th>What they do</th></tr>
+<tr><td>You</td><td>Cardholder</td><td>Own the card</td></tr>
+<tr><td>The shop</td><td>Merchant</td><td>Wants to be paid</td></tr>
+<tr><td>The shop's bank</td><td>Acquirer</td><td>Gives the shop its terminal and collects money for it</td></tr>
+<tr><td>The card network</td><td>Scheme</td><td>Connects all the banks and sets the rules. Its logo is on the card.</td></tr>
+<tr><td>The card's bank</td><td>Issuer</td><td>Gave you the card and holds your money or your credit</td></tr>
+</table></div>
+
+<h3>Part 1: asking permission</h3>
+<p>This is called <b>authorisation</b>. Press Next step and watch the question travel out and the answer travel back.</p>
+<div data-widget="flow" data-ref="pay1-auth"></div>
+<p>Notice what did <b>not</b> happen: no money moved. The card's bank only promised that the 250 is good and set it aside. The shop hands over the goods on the strength of that promise.</p>
+<p>Step 1, the tap, hides a whole conversation between the chip and the terminal, made of small commands and replies. That conversation gets its own note later.</p>
+
+<h3>Part 2: moving the money</h3>
+<p>The money moves later, in two stages. <b>Clearing</b> is the banks agreeing on who owes what. <b>Settlement</b> is the money moving.</p>
+<div data-widget="flow" data-ref="pay1-settle"></div>
+
+<h3>Why it is built this way</h3>
+<ul>
+<li><b>Speed.</b> Asking permission must take a second or two, because someone is standing at the counter. Moving money between banks is slower, so it is done afterwards in bulk.</li>
+<li><b>Reach.</b> There are thousands of banks. Each one connects once, to the network, and can then deal with all the others.</li>
+<li><b>Trust.</b> The shop never needs to trust you or your bank. It trusts the approval, and the network's rules say who carries the loss if something goes wrong.</li>
+</ul>
+
+<h3>Words to keep</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Word</th><th>Meaning</th></tr>
+<tr><td>Authorisation</td><td>Asking the card's bank for a yes or no, in real time</td></tr>
+<tr><td>Clearing</td><td>Exchanging the details of the day's payments so everyone agrees who owes what</td></tr>
+<tr><td>Settlement</td><td>The money actually moving between banks</td></tr>
+<tr><td>Acquirer, issuer</td><td>The shop's bank, the card's bank</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>The terminal says Approved. Has the shop been paid?</summary><p>No. The card's bank has promised the money and set it aside. The shop is paid after clearing and settlement, usually a day or so later.</p></details>
+<details><summary>How does the network know which bank to send the request to?</summary><p>From the first digits of the card number, which identify the bank that gave out the card.</p></details>
+<details><summary>Why does the shop's bank not ask the card's bank directly?</summary><p>It would need a connection and an agreement with every bank in the world. The network gives each bank one connection that reaches all the others.</p></details>
+<details><summary>A payment is approved at 6 pm and the shop's list is sent at 11 pm. Which stage is the 11 pm one?</summary><p>The start of clearing. Authorisation happened at 6 pm.</p></details>`,
   },
 
   // ======================= questions he asked =======================

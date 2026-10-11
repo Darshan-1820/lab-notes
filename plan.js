@@ -1,0 +1,57 @@
+// The plan: what to finish this week, how the tracks fit into a day, and the long roadmap.
+// The tutor rewrites "week" and "targets" every Sunday from what the activity log shows.
+// A target with "missions" is ticked automatically in the lab when those missions are passed.
+
+window.PLAN = {
+  updated: '2026-10-12',
+  // Lessons 1 to 5 were all passed on the first night, faster than first planned, so the week was pulled forward.
+  week: {
+    title: 'Week 1: 12 to 18 October',
+    goal: 'Finish the first stretch of the Arena game, prove it with a rematch, and understand how one card payment travels.',
+  },
+  targets: [
+    {
+      by: 'Today, Monday 12',
+      items: [
+        { text: 'Lesson 6: Fight to the end (loops)', missions: ['w1m6'] },
+        { text: 'Lesson 7: the timed challenge', missions: ['w1m7'] },
+        { text: 'On a break: read the payments note "What happens when you tap a card"' },
+      ],
+    },
+    {
+      by: 'By Wednesday 14',
+      items: [
+        { text: 'Second stretch of the game, part 1: random damage and the monster hits back (written as soon as lesson 7 is passed)' },
+        { text: 'On breaks: concept notes 1 to 6 and their "check yourself" questions' },
+      ],
+    },
+    {
+      by: 'By Sunday 18',
+      items: [
+        { text: 'Second stretch, part 2: player input and methods' },
+        { text: 'Rematch: one new problem on variables, if and while, with no help. Passing it is what counts as mastered.' },
+        { text: 'Payments: the second note, on what is inside the messages' },
+        { text: 'Sunday: 15 minutes with the tutor to look at the week and set the next one' },
+      ],
+    },
+  ],
+  tracks: [
+    { name: 'Programming', where: 'Laptop, evenings', time: 'About 90 minutes a day', what: 'The missions. This is the main track and the only one that needs the laptop every day.' },
+    { name: 'Payments', where: 'Phone, office breaks', time: 'About 10 minutes a day', what: 'One visual note at a time: how a payment travels, what the messages contain, how the chip proves itself. Reading only, no code yet.' },
+    { name: 'Revision', where: 'Phone or laptop', time: '5 to 10 minutes a day', what: 'Concept notes and their "check yourself" questions, and a rematch problem each weekend.' },
+    { name: 'Problem solving (DSA)', where: 'Laptop', time: 'Starts in week 3', what: 'Short daily problems once loops, arrays and methods are in place. Starting earlier would be guessing.' },
+  ],
+  roadmap: [
+    { when: 'Weeks 1 to 4', what: 'Programming from zero through three small builds: a fighting game, a money tool, a decoder for card data. Then a bigger version of whichever one you kept coming back to.' },
+    { when: 'Weeks 5 to 9', what: 'Objects and classes (through the game), collections, errors, files. Daily problem solving.' },
+    { when: 'Weeks 10 to 13', what: 'SQL and databases. A tested command-line project.' },
+    { when: 'Months 4 to 6', what: 'How the web works, then Spring Boot: a real service with a database and tests. First small open-source contribution.' },
+    { when: 'Months 6 to 12', what: 'Operating systems, networking, concurrency, Docker, system design. A second project. Applying for jobs.' },
+  ],
+  milestones: [
+    { when: '30 days', what: 'Write and debug small Java programs alone. Solve easy array and string problems.' },
+    { when: '90 days', what: 'A tested command-line project. About 60 easy and 15 medium problems. SQL joins.' },
+    { when: '6 months', what: 'A Spring Boot and PostgreSQL service with tests. A first open-source contribution.' },
+    { when: '12 months', what: 'Two solid projects. Repeated contributions to one project. Applying.' },
+  ],
+};
