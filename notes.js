@@ -410,6 +410,7 @@ if (alive) {
 <ul>
 <li>A loop can run <b>zero times</b>. The question is asked before the first round.</li>
 <li>If nothing inside moves the box toward "no", the loop is <b>endless</b>. In a terminal you stop a runaway program with Ctrl + C.</li>
+<li>The question is the loop's <b>stop rule</b>. Take it from the problem before you write any code: "three potions" means count to three, and "until full" means watch the HP. They can give the same output for one input and different output for another.</li>
 <li>Whether the edge counts decides the last round. Being wrong by exactly one round is so common it has a name: an <b>off-by-one error</b>.</li>
 </ul>
 
@@ -424,6 +425,20 @@ if (monsterHp > 0) {
     System.out.println("You win!");
 }</pre>
 <p>Asking the same question again straight after the loop is pointless: the answer is always no. The first message can never print, whatever numbers you use. Code that can never run is called <b>dead code</b>. Remove it, and print the win message directly. Shorter code that says the same thing is easier to read and has fewer places for bugs to hide.</p>
+
+<h3>Running totals</h3>
+<p>Some boxes are meant to <b>add up</b> across the rounds of a loop. Such a box is called an <b>accumulator</b>. It starts at 0 before the loop, and each round adds to it with <code>+=</code>.</p>
+<p>The classic slip is to write <code>=</code> where <code>+=</code> was meant. Then each round replaces the total, and at the end the box holds only what the last round put there.</p>
+<p>A hero with 50 HP drinks three potions of 30 each, HP cannot go above 100, and you want the total HP wasted:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Potion</th><th>HP before</th><th>HP + 30</th><th>HP after the cap</th><th>Wasted this round</th></tr>
+<tr><td>1</td><td>50</td><td>80</td><td>80</td><td>0</td></tr>
+<tr><td>2</td><td>80</td><td>110</td><td>100</td><td>10</td></tr>
+<tr><td>3</td><td>100</td><td>130</td><td>100</td><td>30</td></tr>
+</table></div>
+<pre>wasted += heroHp - 100;   // adds each round:      0, then 10, then 40
+wasted = heroHp - 100;    // replaces each round:  0, then 10, then 30</pre>
+<p>The right answer is 40. The second version prints 30, and with a starting HP of 20 it happens to print the correct 10, because only one potion wastes anything. A bug like this hides until you try an input where the difference shows. Writing the table by hand for a second starting value is how you catch it.</p>
 
 <h3>Why loops matter so much</h3>
 <p>A loop is how a short program does a large amount of work: ten lines can process ten million payments. It is also where a program spends nearly all its time. When software is slow, the cause is almost always a loop that runs more times than it needs to. Counting how many times a loop runs is the beginning of a subject you will meet in week 3.</p>
@@ -443,6 +458,278 @@ if (monsterHp > 0) {
 <details><summary><code>int m = 5; while (m > 5) { ... }</code> How many times does the block run?</summary><p>Zero. 5 is not greater than 5, so the block is skipped at the first check.</p></details>
 <details><summary>A monster has 100 HP and takes 30 damage a round. How many rounds until its HP is 0 or less?</summary><p>Four. After three rounds it has 10 left, so a fourth is needed, which takes it to -20.</p></details>
 <details><summary>Where does the "You win!" message go: inside the loop or after it?</summary><p>After it. The program only gets past the closing brace when the question has become false, which means the monster is down.</p></details>`,
+  },
+
+  {
+    id: 'concept-and-or',
+    kind: 'concept', lesson: 'w1m8', order: 7,
+    date: '2026-10-12',
+    title: 'Joining questions: and, or, not',
+    from: 'Goes with lesson 8: The monster hits back',
+    widgets: {
+      'c7-exit': {
+        code: ['int heroHp = 30;', 'int monsterHp = 25;', 'while (heroHp > 0 && monsterHp > 0) {', '    monsterHp = monsterHp - 25;', '    if (monsterHp > 0) {', '        heroHp = heroHp - 20;', '    }', '}', 'if (monsterHp <= 0) {', '    System.out.println("You win!");', '} else {', '    System.out.println("You lose.");', '}'],
+        steps: [
+          { line: 1, vars: { heroHp: 30, monsterHp: 25 }, out: [], note: 'Two boxes, and the loop cares about both.' },
+          { line: 2, vars: { heroHp: 30, monsterHp: 25 }, out: [], note: 'Is the hero alive? Yes. Is the monster alive? Yes. Both yes, so go inside.' },
+          { line: 3, vars: { heroHp: 30, monsterHp: 0 }, out: [], note: 'The hero hits. The monster is down.' },
+          { line: 4, vars: { heroHp: 30, monsterHp: 0 }, out: [], note: 'Is the monster still alive? No, so it does not hit back.' },
+          { line: 2, vars: { heroHp: 30, monsterHp: 0 }, out: [], note: 'Hero alive: yes. Monster alive: no. One no is enough to make the joined answer no. The loop ends.' },
+          { line: 8, vars: { heroHp: 30, monsterHp: 0 }, out: [], note: 'The loop could have ended because of either box. So this question is not dead code: you have to ask.' },
+          { line: 9, vars: { heroHp: 30, monsterHp: 0 }, out: ['You win!'], note: 'With other starting numbers the other ending would print.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>One comparison answers one question. Real decisions often need two at once: keep fighting while the hero is alive <i>and</i> the monster is alive. Java has three signs for building a bigger question out of smaller ones.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Sign</th><th>Read as</th><th>True when</th></tr>
+<tr><td><code>a &amp;&amp; b</code></td><td>and</td><td>both a and b are true</td></tr>
+<tr><td><code>a || b</code></td><td>or</td><td>at least one of them is true</td></tr>
+<tr><td><code>!a</code></td><td>not</td><td>a is false</td></tr>
+</table></div>
+<p><b>Try it.</b> Flip the two answers and watch all three joined questions change.</p>
+<div data-widget="logic" data-key="c7-logic" data-a="heroHp > 0" data-b="monsterHp > 0"></div>
+
+<h3>A loop with two ways out</h3>
+<p>A loop with <code>&amp;&amp;</code> in its question ends as soon as <b>either</b> side becomes false. So when the program gets past it, you know one of the two is false, but not which one. That is why the question after the loop is real work here, and was dead code in lesson 6.</p>
+<div data-widget="stepper" data-ref="c7-exit"></div>
+
+<h3>Turning a question round</h3>
+<p>"Keep going while both are alive" and "stop when either one is down" say the same thing. In code:</p>
+<pre>!(heroHp > 0 && monsterHp > 0)
+heroHp <= 0 || monsterHp <= 0</pre>
+<p>These two always give the same answer. The rule: when you put "not" in front of a joined question, each part flips and "and" swaps with "or". It is worth knowing because the stop rule of a loop is always the opposite of its question.</p>
+
+<h3>Java stops as soon as it knows</h3>
+<p>In <code>a &amp;&amp; b</code>, if a is false the answer is already no, so Java never looks at b. In <code>a || b</code>, if a is true the answer is already yes. This lets the first part protect the second:</p>
+<pre>if (count != 0 && total / count > 5) { ... }</pre>
+<p>When count is 0 the division is never attempted, so the program does not stop with a divide by zero error.</p>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Mistake</th><th>What happens</th></tr>
+<tr><td><code>||</code> where <code>&amp;&amp;</code> was meant in a loop question</td><td>No error. The loop keeps going while either side is true, often for ever.</td></tr>
+<tr><td>Writing a range the school way: <code>if (0 &lt; hp &lt; 10)</code></td><td class="bad">bad operand types for binary operator '&lt;'</td></tr>
+<tr><td>The right way to write that range</td><td><code>if (hp &gt; 0 &amp;&amp; hp &lt; 10)</code></td></tr>
+<tr><td>A single <code>&amp;</code> in place of <code>&amp;&amp;</code></td><td>It compiles, but both sides are always worked out, so the protection above is lost.</td></tr>
+<tr><td>Letting a fighter act after it has fallen</td><td>No error. Check who is alive in the middle of the round too, not only at the top of the loop.</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>heroHp is 10 and monsterHp is 0. What is <code>heroHp > 0 && monsterHp > 0</code>? And with <code>||</code>?</summary><p>With && it is false, because the second part is false. With || it is true, because the first part is true.</p></details>
+<details><summary>A loop runs <code>while (gold > 0 && items < 5)</code>. Write the question that is true exactly when the loop has stopped.</summary><p><code>gold <= 0 || items >= 5</code>. Each part flips, and "and" becomes "or".</p></details>
+<details><summary>Why is <code>count != 0 && total / count > 5</code> safe, but the same two parts the other way round is not?</summary><p>Java works from left to right and stops when it knows the answer. With the check first, the division is skipped when count is 0. The other way round, the division happens first and stops the program.</p></details>`,
+  },
+  {
+    id: 'concept-random',
+    kind: 'concept', lesson: 'w1m9', order: 8,
+    date: '2026-10-12',
+    title: 'Random numbers, and why they are not really random',
+    from: 'Goes with lesson 9: Roll the dice',
+    html: `
+<h3>The idea</h3>
+<p>A program that always does the same thing makes a dull game. Java has a tool, <code>Random</code>, that hands out numbers you cannot predict in advance. Unlike <code>System.out</code>, it has to be loaded first.</p>
+<pre>import java.util.Random;              // first line of the file
+
+Random dice = new Random();           // make one dice, once
+int damage = dice.nextInt(21) + 10;   // roll it: 10 to 30</pre>
+
+<h3>The recipe for a range</h3>
+<p><code>nextInt(n)</code> gives one of n numbers and starts at zero: 0 up to n - 1. It never gives n itself.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>You want</th><th>How many values</th><th>You write</th></tr>
+<tr><td>0 to 5</td><td>6</td><td><code>dice.nextInt(6)</code></td></tr>
+<tr><td>1 to 6</td><td>6</td><td><code>dice.nextInt(6) + 1</code></td></tr>
+<tr><td>10 to 30</td><td>21</td><td><code>dice.nextInt(21) + 10</code></td></tr>
+<tr><td>low to high</td><td>high - low + 1</td><td><code>dice.nextInt(high - low + 1) + low</code></td></tr>
+</table></div>
+<p><b>Try it.</b> Set it up for 1 to 6. Roll once a few times, then roll 100 times and look at how even the bars are. Then try to make 50 to 59.</p>
+<div data-widget="dice" data-key="c8-dice" data-n="6" data-k="1"></div>
+<p>The "+ 1" in "high - low + 1" is easy to forget. From 10 to 30 there are 21 numbers, not 20, because both ends count.</p>
+
+<h3>Make the dice once, roll it many times</h3>
+<p>Create the <code>Random</code> above the loop. Call <code>nextInt</code> inside the loop, every time you need a new number. A roll stored in a box before the loop is one number, however many rounds read it.</p>
+
+<h3>Why it is called pseudo-random</h3>
+<p>A computer only follows instructions, so it cannot roll real dice. <code>Random</code> starts from one number, the <b>seed</b>, and pushes it through a fixed formula to get the next number, then again to get the one after. The results look random, but the seed decides all of them.</p>
+<pre>Random dice = new Random(7);
+System.out.println(dice.nextInt(21) + 10);   // 20
+System.out.println(dice.nextInt(21) + 10);   // 15
+System.out.println(dice.nextInt(21) + 10);   // 28</pre>
+<p>That prints 20, 15, 28 on every run, on every computer. With plain <code>new Random()</code> Java chooses a different seed each time, using things that keep changing such as the clock.</p>
+<p>A fixed seed is useful when you want the same "random" events again: replaying a game, or repeating the exact run that showed a bug.</p>
+
+<h3>Never for secrets</h3>
+<p>Anyone who learns the seed can work out every number that follows. So <code>Random</code> must not be used for passwords, one-time codes or keys. For those Java has <code>SecureRandom</code>, which gathers real unpredictability from the machine. In payments this matters a great deal: the codes a card and a bank exchange are only safe if nobody can predict them.</p>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Mistake</th><th>What happens</th></tr>
+<tr><td>No import line</td><td class="bad">cannot find symbol ... symbol: class Random</td></tr>
+<tr><td><code>dice.nextInt(0)</code></td><td class="bad">IllegalArgumentException: bound must be positive</td></tr>
+<tr><td><code>nextInt(30) + 10</code> when you wanted 10 to 30</td><td>No error. It gives 10 to 39.</td></tr>
+<tr><td>Rolling once, above the loop</td><td>No error. Every round uses the same number.</td></tr>
+<tr><td>Leaving a fixed seed in by accident</td><td>No error. The "random" game is identical every time.</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>What are the smallest and largest numbers <code>dice.nextInt(6) + 1</code> can give?</summary><p>1 and 6. nextInt(6) gives 0 to 5, and adding 1 moves that to 1 to 6.</p></details>
+<details><summary>Write the roll for a number from 50 to 59.</summary><p><code>dice.nextInt(10) + 50</code>. There are 10 values, starting at 50.</p></details>
+<details><summary>Two programs both use <code>new Random(42)</code> and make the same calls. Do they get the same numbers?</summary><p>Yes, exactly the same, in the same order. The seed decides everything.</p></details>
+<details><summary>Why can you not test a random program by comparing its output with one fixed expected output?</summary><p>The output differs on every run. You check rules that must always hold: every roll is inside its range, and every HP line follows from the one before it. This is how your dice lesson is checked.</p></details>`,
+  },
+  {
+    id: 'concept-input',
+    kind: 'concept', lesson: 'w1m10', order: 9,
+    date: '2026-10-12',
+    title: 'Input: reading what someone types',
+    from: 'Goes with lesson 10: Your move',
+    widgets: {
+      'c9-queue': {
+        code: ['Scanner keys = new Scanner(System.in);', 'System.out.println("Your move:");', 'int move = keys.nextInt();', 'System.out.println("Amount:");', 'int amount = keys.nextInt();', 'System.out.println(move + " then " + amount);'],
+        steps: [
+          { line: 0, vars: { 'typed, not yet read': '(nothing)' }, out: [], note: 'A reader is connected to the input. Nothing has been typed yet.' },
+          { line: 1, vars: { 'typed, not yet read': '(nothing)' }, out: ['Your move:'], note: 'Ask first. A program that waits without saying what it wants looks frozen.' },
+          { line: 2, vars: { 'typed, not yet read': '(nothing)' }, out: ['Your move:'], note: 'nextInt finds nothing to read, so the program stops here and waits.' },
+          { line: 2, vars: { 'typed, not yet read': '1', move: '?' }, out: ['Your move:'], note: 'The player types 1 and presses Enter. Now there is something in the queue.' },
+          { line: 2, vars: { 'typed, not yet read': '(nothing)', move: 1 }, out: ['Your move:'], note: 'nextInt takes it out of the queue, turns the character 1 into the number 1, and hands it back.' },
+          { line: 4, vars: { 'typed, not yet read': '(nothing)', move: 1 }, out: ['Your move:', 'Amount:'], note: 'The same again: ask, then wait.' },
+          { line: 4, vars: { 'typed, not yet read': '(nothing)', move: 1, amount: 250 }, out: ['Your move:', 'Amount:'], note: 'The player typed 250 and Enter. Three characters became one number.' },
+          { line: 5, vars: { 'typed, not yet read': '(nothing)', move: 1, amount: 250 }, out: ['Your move:', 'Amount:', '1 then 250'], note: 'From here on they are ordinary boxes.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>Output is the program talking. Input is the program listening. With input, the same program can do different things each time, depending on the person using it.</p>
+<pre>import java.util.Scanner;                 // at the top, with the other imports
+
+Scanner keys = new Scanner(System.in);    // make one reader, once
+int move = keys.nextInt();                // wait for a whole number</pre>
+
+<h3>What a Scanner can read</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>You write</th><th>It hands back</th></tr>
+<tr><td><code>keys.nextInt()</code></td><td>The next whole number</td></tr>
+<tr><td><code>keys.next()</code></td><td>The next word, as text</td></tr>
+<tr><td><code>keys.nextLine()</code></td><td>Everything up to the end of the line, as text</td></tr>
+</table></div>
+
+<h3>Typed input waits in a queue</h3>
+<p>What is typed does not go straight into your boxes. It waits in a queue, and each read takes the next thing out. Something that has been read is gone from the queue.</p>
+<div data-widget="stepper" data-ref="c9-queue"></div>
+
+<h3>Three channels every program has</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Channel</th><th>In Java</th><th>Used for</th></tr>
+<tr><td>Standard input</td><td><code>System.in</code></td><td>What the program reads</td></tr>
+<tr><td>Standard output</td><td><code>System.out</code></td><td>The normal results</td></tr>
+<tr><td>Standard error</td><td><code>System.err</code></td><td>Problem reports, kept apart from the results</td></tr>
+</table></div>
+<p>Normally the keyboard feeds the input and both outputs go to the screen, which is why <code>System.err.println</code> looks the same as <code>System.out.println</code> in a terminal. But they are separate channels, and a tool that reads a program's results only reads the output channel. The lab's checks work that way.</p>
+<p>The input channel does not have to be a keyboard either. A file or another program can feed it. That is how the lab plays scripted games against your code, and how real systems connect programs together.</p>
+
+<h3>Never trust input</h3>
+<p>Everything that comes from outside can be wrong: a letter where a number should be, a move that does not exist, a negative price. Decide what your program does in each case. An <code>else</code> that says "Not a move." is the simplest form of this. A large share of real security problems start with input that nobody checked.</p>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Mistake</th><th>What happens</th></tr>
+<tr><td>No import line</td><td class="bad">cannot find symbol ... symbol: class Scanner</td></tr>
+<tr><td>Reading when no more input will ever come</td><td class="bad">java.util.NoSuchElementException</td></tr>
+<tr><td>A word is typed where <code>nextInt</code> expects a number</td><td class="bad">java.util.InputMismatchException</td></tr>
+<tr><td>Reading before asking</td><td>No error. The program sits silent and looks frozen.</td></tr>
+<tr><td>Making a new Scanner inside the loop</td><td>Often loses input that was already typed. Make one, above the loop.</td></tr>
+<tr><td><code>nextLine()</code> straight after <code>nextInt()</code></td><td>It hands back empty text. nextInt took the number but left the Enter, and nextLine reads up to that Enter.</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>The player types 4, Enter, 9, Enter. The program calls <code>nextInt()</code> three times. What happens on the third call?</summary><p>If the keyboard is still connected, the program waits for more typing. If the input has ended, as in a scripted run, it stops with NoSuchElementException.</p></details>
+<details><summary>Why did <code>System.err.println</code> fail the checks in the potion challenge although the lines looked right?</summary><p>It writes to the error channel. The checks read only the output channel, so they saw one line where they expected four.</p></details>
+<details><summary>The player types the digit 7. What arrives in the input queue, and what does nextInt hand back?</summary><p>The character 7 arrives, which is stored as the number 55. nextInt turns the characters into the value 7.</p></details>`,
+  },
+  {
+    id: 'concept-methods',
+    kind: 'concept', lesson: 'w1m11', order: 10,
+    date: '2026-10-12',
+    title: 'Methods: naming a piece of work',
+    from: 'Goes with lesson 11: Give the moves names',
+    widgets: {
+      'c10-stack': {
+        code: ['static int heal(int hp) {', '    int after = hp + 30;', '    if (after > 100) {', '        return 100;', '    }', '    return after;', '}', '', 'public static void main(String[] args) {', '    int heroHp = 90;', '    heroHp = heal(heroHp);', '    System.out.println(heroHp);', '}'],
+        steps: [
+          { line: 9, frames: [{ name: 'main', vars: { heroHp: 90 } }], out: [], note: 'main has one box.' },
+          { line: 10, frames: [{ name: 'main', vars: { heroHp: 90 } }], out: [], note: 'To work out the right side, main must call heal. It pauses here.' },
+          { line: 0, frames: [{ name: 'main', vars: { heroHp: 90 } }, { name: 'heal', vars: { hp: 90 } }], out: [], note: 'A new frame goes on top. The value 90 is copied into the parameter hp. The two boxes are now separate.' },
+          { line: 1, frames: [{ name: 'main', vars: { heroHp: 90 } }, { name: 'heal', vars: { hp: 90, after: 120 } }], out: [], note: 'heal works with its own boxes. main cannot see them, and heal cannot see heroHp.' },
+          { line: 3, frames: [{ name: 'main', vars: { heroHp: 90 } }, { name: 'heal', vars: { hp: 90, after: 120 } }], out: [], note: '120 is above 100, so the method returns 100 and ends at once. The last line of heal never runs this time.' },
+          { line: 10, frames: [{ name: 'main', vars: { heroHp: 100 } }], out: [], note: 'The frame for heal is thrown away. main continues where it paused and stores the answer.' },
+          { line: 11, frames: [{ name: 'main', vars: { heroHp: 100 } }], out: ['100'], note: 'Without "heroHp =" on the line above, the 100 would have been lost and this would print 90.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>A <b>method</b> is a block of code with a name. You write it once and <b>call</b> it by name wherever you need it. Methods remove repetition, and they let you read a program as a list of named steps.</p>
+
+<h3>The parts</h3>
+<pre>static int roll(Random dice, int low, int high) {
+    return dice.nextInt(high - low + 1) + low;
+}</pre>
+<div class="tablewrap"><table class="plain">
+<tr><th>Part</th><th>Meaning</th></tr>
+<tr><td><code>static</code></td><td>Needed for a method that main calls directly. Explained in week 4.</td></tr>
+<tr><td><code>int</code></td><td>The <b>return type</b>: the kind of answer the method gives back</td></tr>
+<tr><td><code>roll</code></td><td>The name. Use a verb that says what it does.</td></tr>
+<tr><td><code>(Random dice, int low, int high)</code></td><td>The <b>parameters</b>: boxes the caller fills in</td></tr>
+<tr><td><code>return ...;</code></td><td>Hands back the answer and ends the method at once</td></tr>
+</table></div>
+<p>A method goes inside the class and outside <code>main</code>. The order of methods in the file does not matter.</p>
+
+<h3>Three kinds you will write</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Gives back</th><th>Example</th><th>Called like</th></tr>
+<tr><td>A number</td><td><code>static int heal(int hp)</code></td><td><code>heroHp = heal(heroHp);</code></td></tr>
+<tr><td>Yes or no</td><td><code>static boolean alive(int hp)</code></td><td><code>if (alive(heroHp)) { ... }</code></td></tr>
+<tr><td>Nothing: it only does something</td><td><code>static void showHp(String who, int hp)</code></td><td><code>showHp("Hero", heroHp);</code></td></tr>
+</table></div>
+<p><code>void</code> means there is no answer. A void method needs no <code>return</code>.</p>
+
+<h3>What happens during a call</h3>
+<p>Every call gets its own set of boxes, called a <b>frame</b>. Frames are stacked: the newest call is on top, and when it returns it is removed and the one below carries on. This pile is the <b>call stack</b>.</p>
+<div data-widget="callstack" data-ref="c10-stack"></div>
+<p>Three rules fall out of that picture.</p>
+<ul>
+<li><b>Values are copied in.</b> The method gets a copy of the number, not the caller's box. Changing a parameter does not change anything in main.</li>
+<li><b>Only the returned value comes back.</b> If you do not store or use it, it is lost. <code>heal(heroHp);</code> on a line by itself changes nothing.</li>
+<li><b>A method cannot see main's boxes.</b> Whatever it needs must be passed in as a parameter.</li>
+</ul>
+
+<h3>Why it is worth the effort</h3>
+<ul>
+<li><b>One place to change.</b> If potions should heal 40, you edit one line in <code>heal</code>.</li>
+<li><b>Names explain.</b> <code>heroHp = heal(heroHp);</code> says what is happening. The five lines it replaced had to be read and understood.</li>
+<li><b>Small pieces can be tested alone.</b> You can check that <code>heal(90)</code> gives 100 without playing a whole game. That is what the tests you will write later do.</li>
+</ul>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Mistake</th><th>What Java says</th></tr>
+<tr><td>A path through the method that reaches the end without <code>return</code></td><td class="bad">missing return statement</td></tr>
+<tr><td>Calling with the wrong number of values</td><td class="bad">method ... cannot be applied to given types</td></tr>
+<tr><td>Leaving out <code>static</code></td><td class="bad">non-static method ... cannot be referenced from a static context</td></tr>
+<tr><td>Storing the answer of a <code>void</code> method</td><td class="bad">incompatible types: void cannot be converted to int</td></tr>
+<tr><td>Writing a method inside main</td><td class="bad">illegal start of expression</td></tr>
+<tr><td>Calling a method and ignoring what it returns</td><td>No error. Nothing changes.</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary><code>int heroHp = 90; heal(heroHp); System.out.println(heroHp);</code> What is printed?</summary><p>90. heal worked out 100 and handed it back, but nothing stored it. The fix is <code>heroHp = heal(heroHp);</code></p></details>
+<details><summary>A method changes its parameter: <code>hp = hp - 50;</code>. Does the caller's box change?</summary><p>No. The parameter is a separate box holding a copy. Inside the method it becomes 50 less, and outside nothing changes.</p></details>
+<details><summary>Which return type would you give a method that answers "can the hero afford this"?</summary><p><code>boolean</code>, because the answer is yes or no. For example <code>static boolean canAfford(int gold, int price)</code>.</p></details>
+<details><summary>What is a frame, and when is it thrown away?</summary><p>The set of boxes belonging to one call of a method: its parameters and anything declared inside it. It is thrown away when that call returns.</p></details>`,
   },
 
   // ======================= payments (kind: 'payments', in reading order) =======================

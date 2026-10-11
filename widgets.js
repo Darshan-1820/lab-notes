@@ -2,6 +2,7 @@
 // Shared by the lab (index.html) and the phone-friendly notes page (app/notes-site/page.html).
 //
 //   Lab.noteCard(note)          -> an element showing one note
+//   Lab.callstack(block, key)   -> the same, for code that calls methods (steps carry frames[])
 //   Lab.planView(plan, isDone)  -> the plan page (isDone(missionId) is optional, for ticks)
 //   Lab.stepper(block, key)     -> a line-by-line walk-through of code (block has code[] and steps[])
 //   Lab.hydrate(root, { run })  -> turns every [data-widget] inside root into a working diagram
@@ -17,6 +18,9 @@
 //   run     a Run button for a file in play/ (data-file)
 //   calc    two whole numbers and a sign, worked out the way Java does it
 //   compound  the short ways to change a box (+=, -=, ++ ...)
+//   dice    dice.nextInt(n) + k: the range, a roll button and how the rolls spread (data-n, data-k)
+//   logic   two yes/no answers joined with &&, || and ! (data-a, data-b are the two questions)
+//   callstack  a walk-through with one frame per method call: data-ref plus widgets: { name: { code, steps } }
 //   compare two numbers with all six comparison questions answered live
 //   loop    set monsterHp and damage, see how many times a while loop runs
 //   flow    a message travelling between parties: data-ref="name" plus widgets: { name: { parties, steps } }
@@ -124,6 +128,17 @@
   ul.ticks li.done { color: var(--dim); text-decoration: line-through; }
   ul.ticks li.done::before { background: var(--accent); border-color: var(--accent); }
   .track-row { padding: 9px 0; border-top: 1px solid var(--line); display: grid; gap: 2px; }
+  .frames { display: flex; flex-direction: column; gap: 6px; }
+  .frame { border: 2px solid var(--line); border-radius: 8px; padding: 6px 10px; opacity: .7; }
+  .frame.top { border-color: var(--accent); opacity: 1; }
+  .frame .fname { font: 600 13px var(--mono, Consolas, monospace); margin-bottom: 4px; }
+  .frame .boxes { min-height: 0; }
+  .dicebars { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 2px; height: 90px; align-items: end; margin-top: 12px; border-bottom: 2px solid var(--line); }
+  .dicecol { height: 100%; display: flex; align-items: flex-end; background: color-mix(in srgb, var(--line) 35%, transparent); border-radius: 3px 3px 0 0; }
+  .dicecol .bar { width: 100%; background: var(--blue); border-radius: 3px 3px 0 0; min-height: 0; }
+  .dicecol.on { outline: 2px solid var(--accent); }
+  .dicecol.on .bar { background: var(--accent); }
+  .diceaxis { display: flex; justify-content: space-between; font: 13px var(--mono, Consolas, monospace); color: var(--dim); }
   .wrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
   `;
   const style = document.createElement('style');
@@ -389,6 +404,111 @@
     draw();
   }
 
+  // ---- walk through code that calls methods: each call gets its own frame on the stack ----
+  //   { code: [...], steps: [{ line, frames: [{ name, vars }], out: [...], note }] }   frames[0] is main, last is on top
+  function callstack(b, key) {
+    if (state[key] == null) state[key] = 0;
+    const card = el('div', 'card stepper');
+    function draw() {
+      const at = state[key], s = b.steps[at], last = at === b.steps.length - 1;
+      card.innerHTML = '';
+      const lines = el('div', 'lines');
+      b.code.forEach((line, n) => lines.append(el('div', 'ln' + (n === s.line ? ' on' : ''), esc(line) || ' ')));
+      card.append(lines);
+      const grid = el('div', 'grid');
+      const mem = el('div'); mem.append(el('h4', '', 'The call stack (newest call on top)'));
+      const stack = el('div', 'frames');
+      s.frames.slice().reverse().forEach((f, n) => {
+        const fr = el('div', 'frame' + (n === 0 ? ' top' : ''));
+        fr.append(el('div', 'fname', esc(f.name)));
+        const boxes = el('div', 'boxes');
+        Object.entries(f.vars).forEach(([name, value]) => { const bx = el('div', 'box'); bx.append(el('div', 'v', esc(value)), el('div', 'n', esc(name))); boxes.append(bx); });
+        if (!Object.keys(f.vars).length) boxes.append(el('div', 'muted', 'no boxes yet'));
+        fr.append(boxes);
+        stack.append(fr);
+      });
+      mem.append(stack);
+      const scr = el('div'); scr.append(el('h4', '', 'Screen'), el('div', 'screen', esc(s.out.join('\n'))));
+      grid.append(mem, scr);
+      card.append(grid, el('div', 'stepnote', esc(s.note)));
+      const row = el('div', 'wrow');
+      const back = btn('Back', '', () => { state[key] = at - 1; draw(); });
+      back.disabled = at === 0;
+      row.append(back, btn(last ? 'Start again' : 'Next step', 'primary', () => { state[key] = last ? 0 : at + 1; draw(); }),
+        el('span', 'muted', 'Step ' + (at + 1) + ' of ' + b.steps.length));
+      card.append(row);
+    }
+    draw();
+    return card;
+  }
+  function callstackWidget(node, opts) {
+    const cfg = (opts.configs || {})[node.dataset.ref];
+    if (!cfg) return;
+    node.innerHTML = '';
+    node.append(callstack(cfg, 'cs:' + node.dataset.ref));
+  }
+
+  // ---- dice.nextInt(howMany) + smallest: see the range, roll it, see how the rolls spread ----
+  function diceWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { n: Number(node.dataset.n || 6), k: Number(node.dataset.k || 1), counts: {}, last: null, total: 0 };
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox';
+    const line = el('div', 'wline');
+    const n = el('input'); n.type = 'number'; n.id = key + '-n'; n.value = st.n; n.setAttribute('aria-label', 'How many different values');
+    const k = el('input'); k.type = 'number'; k.id = key + '-k'; k.value = st.k; k.setAttribute('aria-label', 'Smallest value');
+    line.append(el('span', '', 'dice.nextInt('), n, el('span', '', ') +'), k);
+    const out = el('div');
+    function draw() {
+      const lo = st.k, hi = st.k + st.n - 1;
+      let html = '<div class="bitinfo">Smallest <b>' + lo + '</b>, largest <b>' + hi + '</b></div><div class="muted">' + st.n + ' different values, each equally likely. nextInt(' + st.n + ') alone gives 0 to ' + (st.n - 1) + '.</div>';
+      const most = Math.max(1, ...Object.values(st.counts));
+      html += '<div class="dicebars" style="--n:' + st.n + '">';
+      for (let v = lo; v <= hi; v++) {
+        const c = st.counts[v] || 0;
+        html += '<div class="dicecol' + (v === st.last ? ' on' : '') + '" title="' + v + ': rolled ' + c + ' times"><div class="bar" style="height:' + Math.round(c / most * 100) + '%"></div></div>';
+      }
+      html += '</div><div class="diceaxis"><span>' + lo + '</span><span>' + hi + '</span></div>';
+      html += '<div class="bitmsg">' + (st.last === null ? 'Roll it.' : 'Last roll: ' + st.last + '. Rolled ' + st.total + ' time' + (st.total === 1 ? '' : 's') + ' so far.') + '</div>';
+      out.innerHTML = html;
+    }
+    function reset() { st.counts = {}; st.last = null; st.total = 0; }
+    function setup() {
+      st.n = Math.max(1, Math.min(40, Math.trunc(Number(n.value) || 1)));
+      st.k = Math.max(-999, Math.min(999, Math.trunc(Number(k.value) || 0)));
+      reset(); draw();
+    }
+    function roll(times) {
+      for (let t = 0; t < times; t++) { st.last = Math.floor(Math.random() * st.n) + st.k; st.counts[st.last] = (st.counts[st.last] || 0) + 1; st.total++; }
+      draw();
+    }
+    n.addEventListener('input', setup); k.addEventListener('input', setup);
+    const row = el('div', 'wrow');
+    row.append(btn('Roll once', 'primary', () => roll(1)), btn('Roll 100 times', '', () => roll(100)), btn('Clear', '', () => { reset(); draw(); }));
+    node.append(line, out, row);
+    draw();
+  }
+
+  // ---- two yes/no answers joined with and, or, not ----
+  function logicWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { a: true, b: false };
+    const st = state[key];
+    const an = node.dataset.a || 'heroHp > 0', bn = node.dataset.b || 'monsterHp > 0';
+    function draw() {
+      node.innerHTML = ''; node.className = 'bitsbox';
+      const row = el('div', 'wrow');
+      const mk = (name, which) => { const bt = btn(name + ' is ' + st[which], st[which] ? 'primary mono' : 'mono', () => { st[which] = !st[which]; draw(); }); bt.setAttribute('aria-pressed', String(st[which])); return bt; };
+      row.append(mk(an, 'a'), mk(bn, 'b'));
+      node.append(el('div', 'muted', 'Tap an answer to flip it.'), row);
+      const rows = [[an + ' && ' + bn, 'and: both must be true', st.a && st.b], [an + ' || ' + bn, 'or: at least one must be true', st.a || st.b], ['!(' + an + ')', 'not: flips the answer', !st.a]];
+      const wrap = el('div', 'tablewrap');
+      wrap.innerHTML = '<table class="plain"><tr><th>Joined question</th><th>Meaning</th><th>Answer</th></tr>' + rows.map(r => '<tr><td><code>' + esc(r[0]) + '</code></td><td>' + r[1] + '</td><td class="' + (r[2] ? 'yes' : 'bad') + '"><b>' + r[2] + '</b></td></tr>').join('') + '</table>';
+      node.append(wrap);
+    }
+    draw();
+  }
+
   // ---- two numbers, all six comparison questions answered live ----
   function compareWidget(node) {
     const key = node.dataset.key;
@@ -511,10 +631,11 @@
     node.append(stepper(cfg, 'ref:' + node.dataset.ref));
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget };
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget };
 
   window.Lab = {
     stepper,
+    callstack,
     planView,
     hydrate(root, opts) {
       root.querySelectorAll('[data-widget]').forEach(node => {

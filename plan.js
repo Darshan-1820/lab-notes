@@ -4,31 +4,32 @@
 
 window.PLAN = {
   updated: '2026-10-12',
-  // Lessons 1 to 5 were all passed on the first night, faster than first planned, so the week was pulled forward.
+  // Lessons 1 to 7 were all passed on the first night, so the week was pulled forward to the second stretch.
   week: {
     title: 'Week 1: 12 to 18 October',
-    goal: 'Finish the first stretch of the Arena game, prove it with a rematch, and understand how one card payment travels. The days below are the latest, not a waiting line: when something is done early, go straight to the next thing.',
+    goal: 'Turn the Arena fight into a game you play: the monster hits back, dice decide, you choose the moves. Prove the first stretch with a rematch, and understand how one card payment travels. The days below are the latest, not a waiting line: when something is done early, go straight to the next thing.',
   },
   targets: [
     {
       by: 'Today, Monday 12',
       items: [
-        { text: 'Lesson 6: Fight to the end (loops)', missions: ['w1m6'] },
-        { text: 'Lesson 7: the timed challenge', missions: ['w1m7'] },
+        { text: 'Lesson 8: The monster hits back (two conditions)', missions: ['w1m8'] },
+        { text: 'Lesson 9: Roll the dice (random numbers)', missions: ['w1m9'] },
         { text: 'On a break: read the payments note "What happens when you tap a card"' },
       ],
     },
     {
       by: 'By Wednesday 14',
       items: [
-        { text: 'Second stretch of the game, part 1: random damage and the monster hits back (written as soon as lesson 7 is passed)' },
-        { text: 'On breaks: concept notes 1 to 6 and their "check yourself" questions' },
+        { text: 'Lesson 10: Your move (reading what the player types)', missions: ['w1m10'] },
+        { text: 'Lesson 11: Give the moves names (methods)', missions: ['w1m11'] },
+        { text: 'On breaks: concept notes 7 to 10 and their "check yourself" questions' },
       ],
     },
     {
       by: 'By Sunday 18',
       items: [
-        { text: 'Second stretch, part 2: player input and methods' },
+        { text: 'Lesson 12: the second timed challenge, the shop', missions: ['w1m12'] },
         { text: 'Rematch: one new problem on variables, if and while, with no help. Passing it is what counts as mastered.' },
         { text: 'Payments: the second note, on what is inside the messages' },
         { text: 'Sunday: 15 minutes with the tutor to look at the week and set the next one' },

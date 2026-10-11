@@ -161,6 +161,7 @@
       if (b.t === 'say') body.append(el('div', '', b.html));
       else if (b.t === 'code') body.append(el('pre', '', esc(b.code)));
       else if (b.t === 'stepper') body.append(Lab.stepper(b, m.id + ':' + i));
+      else if (b.t === 'callstack') body.append(Lab.callstack(b, m.id + ':' + i));
       else if (b.t === 'predict') body.append(predict(m, i, b));
       else if (b.t === 'deeper') { const d = el('details', 'card'); d.append(el('summary', '', 'Go deeper: ' + esc(b.title)), el('div', '', b.html)); body.append(d); }
       else if (b.t === 'try' || b.t === 'run') { const c = el('div', 'card try'); c.append(el('div', 'tag', 'Experiment · on your computer'), el('div', '', b.html)); body.append(c); }
