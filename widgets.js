@@ -1,8 +1,12 @@
 // The clickable diagrams used inside notes, and the note card itself.
-// Shared by the lab (index.html) and the phone-friendly notes page (app/notes-site/page.html).
+// Shared by the lab (index.html) and the phone site (app/notes-site/index.html).
 //
 //   Lab.noteCard(note)          -> an element showing one note
 //   Lab.callstack(block, key)   -> the same, for code that calls methods (steps carry frames[])
+//   Lab.marks                   -> read ticks, check-yourself results, section tags and questions:
+//                                  configure({ sink, onChange }), isRead(id), counts(), sends(now),
+//                                  markSent(keys), remove(key), pageTools(id, title, { read }), data().
+//                                  noteCard adds the controls itself unless opts.marks === false.
 //   Lab.planView(plan, isDone)  -> the plan page (isDone(missionId) is optional, for ticks)
 //   Lab.stepper(block, key)     -> a line-by-line walk-through of code (block has code[] and steps[])
 //   Lab.hydrate(root, { run })  -> turns every [data-widget] inside root into a working diagram
@@ -24,6 +28,7 @@
 //   compare two numbers with all six comparison questions answered live
 //   loop    set monsterHp and damage, see how many times a while loop runs
 //   flow    a message travelling between parties: data-ref="name" plus widgets: { name: { parties, steps } }
+//   cardnum the digits of a card number: likely network, the BIN, and the Luhn check worked out live
 //   stepper a walk-through inside a note: data-ref="name" plus widgets: { name: { code, steps } } on the note
 
 (function () {
@@ -139,6 +144,37 @@
   .dicecol.on { outline: 2px solid var(--accent); }
   .dicecol.on .bar { background: var(--accent); }
   .diceaxis { display: flex; justify-content: space-between; font: 13px var(--mono, Consolas, monospace); color: var(--dim); }
+  .marksec { margin: 0 0 8px; font-size: 13.5px; }
+  .markhead { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  button.marklink { background: none; border: 0; padding: 2px 0; color: var(--dim); font-size: 13.5px; text-decoration: underline dotted; text-underline-offset: 3px; font-weight: 400; border-radius: 3px; }
+  .markchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .markchip { display: inline-block; font-size: 13.5px; line-height: 1.3; padding: 4px 11px; border-radius: 99px; border: 1px solid var(--line); background: transparent; color: var(--text); }
+  .markchip.on { background: color-mix(in srgb, var(--blue) 18%, transparent); border-color: var(--blue); }
+  .marktext { color: var(--dim); font-style: italic; overflow-wrap: anywhere; min-width: 0; }
+  textarea.markta { display: block; width: 100%; min-height: 66px; background: var(--code); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 15px/1.45 var(--sans, system-ui, sans-serif); resize: vertical; }
+  .selfcheck { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--dim); }
+  .selfcheck button { padding: 4px 12px; font-size: 14px; }
+  .selfcheck button.got.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .selfcheck button.missed.on { background: var(--warn); color: var(--bg); border-color: var(--warn); }
+  .pagetools { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 14px; display: grid; gap: 8px; min-width: 0; }
+  .pagelabel { font-weight: 600; font-size: 15px; }
+  .pagetools .wrow { margin-top: 2px; }
+  button.readbtn.on { background: transparent; color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .readtick { color: var(--accent); font-weight: 700; }
+  .cardnum .wline input { width: 260px; }
+  .cardnum .samples { margin: 0 0 12px; gap: 6px; }
+  .cardnum .samples button { font-size: 13.5px; padding: 5px 10px; }
+  .cnlabel { font-size: 13px; color: var(--dim); margin: 12px 0 4px; }
+  .cnrow { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+  .cng { display: inline-flex; gap: 3px; }
+  .cn { display: inline-grid; place-items: center; width: 22px; height: 30px; border-radius: 4px; font: 600 15px var(--mono, Consolas, monospace); border: 1px solid var(--line); }
+  .cn.bin { background: color-mix(in srgb, var(--blue) 26%, transparent); border-color: var(--blue); }
+  .cn.bin8 { background: color-mix(in srgb, var(--blue) 10%, transparent); border-color: var(--blue); border-style: dashed; }
+  .cn.chk { background: color-mix(in srgb, var(--accent) 24%, transparent); border-color: var(--accent); }
+  .cn.dbl { outline: 2px solid var(--warn); outline-offset: -2px; }
+  .cnkey { font-size: 13px; color: var(--dim); margin-top: 8px; line-height: 2.1; }
+  .cnkey .cn { width: 14px; height: 14px; font-size: 0; vertical-align: middle; margin: 0 4px 0 8px; }
+  .cnkey .cn:first-child { margin-left: 0; }
   .wrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
   `;
   const style = document.createElement('style');
@@ -631,9 +667,312 @@
     node.append(stepper(cfg, 'ref:' + node.dataset.ref));
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget };
+  // ---- the digits of a card number: network, BIN, and the Luhn check on the last digit ----
+  const CARD_RANGES = [
+    ['Visa', 4, 4, 1], ['Mastercard', 51, 55, 2], ['Mastercard', 2221, 2720, 4],
+    ['American Express', 34, 34, 2], ['American Express', 37, 37, 2],
+    ['Discover', 6011, 6011, 4], ['Discover', 644, 649, 3], ['Discover', 65, 65, 2],
+    ['RuPay', 508, 508, 3], ['RuPay', 81, 81, 2], ['RuPay', 82, 82, 2], ['RuPay', 60, 60, 2],
+    ['JCB', 3528, 3589, 4], ['Diners Club', 36, 36, 2], ['Diners Club', 38, 38, 2], ['Diners Club', 300, 305, 3],
+  ];
+  function cardNetwork(d) {
+    if (!d) return { state: 'empty' };
+    let best = null; const maybe = [];
+    CARD_RANGES.forEach(([name, lo, hi, len]) => {
+      if (d.length >= len) {
+        const v = Number(d.slice(0, len));
+        if (v >= lo && v <= hi && (!best || len > best.len)) best = { name, len };
+      } else {
+        const low = Number(d.padEnd(len, '0')), high = Number(d.padEnd(len, '9'));
+        if (low <= hi && high >= lo) maybe.push({ name, len });
+      }
+    });
+    const rivals = maybe.filter(m => (!best || m.len > best.len) && (!best || m.name !== best.name)).map(m => m.name).filter((x, i, a) => a.indexOf(x) === i);
+    if (best && !rivals.length) return { state: 'known', name: best.name };
+    if (best) return { state: 'more', names: [best.name].concat(rivals) };
+    if (rivals.length) return { state: 'more', names: rivals };
+    return { state: 'unknown' };
+  }
+  // Luhn: from the right, double every second digit; a doubled value over 9 loses 9; the total must end in 0.
+  function luhn(d) {
+    const vals = []; let sum = 0;
+    for (let i = d.length - 1, pos = 0; i >= 0; i--, pos++) {
+      let v = Number(d[i]); const doubled = pos % 2 === 1;
+      if (doubled) { v *= 2; if (v > 9) v -= 9; }
+      vals[i] = { v, doubled }; sum += v;
+    }
+    return { vals, sum, valid: d.length > 1 && sum % 10 === 0 };
+  }
+  function cardNumWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { v: node.dataset.start || '4111 1111 1111 1111' };
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox cardnum';
+    const line = el('div', 'wline');
+    const input = el('input'); input.type = 'text'; input.inputMode = 'numeric'; input.id = key + '-in'; input.maxLength = 23; input.value = st.v; input.setAttribute('aria-label', 'Card number digits');
+    line.append(input);
+    const samples = el('div', 'wrow samples');
+    samples.append(el('span', 'muted', 'Test numbers:'));
+    [['Visa', '4111 1111 1111 1111'], ['Mastercard', '5555 5555 5555 4444'], ['American Express', '3782 822463 10005']].forEach(([label, v]) =>
+      samples.append(btn(label, '', () => { input.value = v; draw(); })));
+    const out = el('div');
+    function draw() {
+      st.v = input.value;
+      const d = st.v.replace(/\D/g, '').slice(0, 19);
+      if (!d) { out.innerHTML = '<div class="muted">Type some digits.</div>'; return; }
+      const net = cardNetwork(d), l = luhn(d);
+      const role = i => i === d.length - 1 && d.length > 8 ? 'chk' : i < 6 ? 'bin' : i < 8 ? 'bin8' : 'acct';
+      const cells = (text, cls) => '<div class="cnrow"><span class="cng">' + d.split('').map((c, i) => (i > 0 && i % 4 === 0 ? '</span><span class="cng">' : '') + '<span class="cn ' + role(i) + (cls ? ' ' + cls(i) : '') + '">' + text(c, i) + '</span>').join('') + '</span></div>';
+      let who;
+      if (net.state === 'known') who = 'Likely network: <b>' + esc(net.name) + '</b>' + (net.name === 'Discover' && /^65/.test(d) ? '. Some RuPay cards also sit in this range, through a partnership between the two networks.' : '');
+      else if (net.state === 'more') who = 'Could be ' + net.names.map(esc).join(' or ') + '. Type more digits.';
+      else who = 'Not one of the common ranges listed here.';
+      let h = '<div class="cnlabel">The number</div>' + cells(c => c);
+      h += '<div class="cnkey"><span class="cn bin">0</span> first 6: the BIN, which names the bank <span class="cn bin8">0</span> digits 7 and 8: part of the BIN on newer ranges <span class="cn acct">0</span> the account <span class="cn chk">0</span> the check digit</div>';
+      h += '<div class="bitinfo" style="font-size:16px">' + who + '</div>';
+      h += '<div class="cnlabel">The Luhn check: from the right, double every second digit (shown boxed); if that gives more than 9, take 9 off</div>' + cells((c, i) => l.vals[i].v, i => (l.vals[i].doubled ? 'dbl' : ''));
+      h += '<div class="bitinfo" style="font-size:16px">Add them up: <b>' + l.sum + '</b>. ' + (d.length < 2 ? '' : l.valid
+        ? '<span class="yes">It ends in 0, so the number passes the check.</span>'
+        : '<span class="bad">It does not end in 0, so the number fails the check. One digit is wrong or two were swapped.</span>') + '</div>';
+      out.innerHTML = h;
+    }
+    input.addEventListener('input', draw);
+    node.append(line, samples, out, el('div', 'muted', 'Test numbers only. Never type a real card number into a web page you do not trust. The ranges here are the common public ones and are approximate; real routing uses full BIN tables that the networks give their members.'));
+    draw();
+  }
+
+  // ---- marks: read ticks, check-yourself results, section tags and questions ----
+  // Kept in this browser. In the lab every change is also logged at once (configure({ sink })).
+  // On the phone site changes wait in an "unsent" queue until he sends them (see sends()).
+  const MKEY = 'lab-marks-v1';
+  const INBOX = 'https://github.com/Darshan-1820/lab-inbox/issues/new';
+  const URL_LIMIT = 5800;
+  const TAGS = [
+    ['important', 'Important', 'Worth remembering'],
+    ['doubt', 'Doubt', 'I have a question here'],
+    ['go-deeper', 'Go deeper', 'I want more depth on this'],
+    ['show-me', 'Show me', 'This needs a picture or a diagram'],
+    ['lost', 'Lost', 'I cannot understand this'],
+  ];
+  const tagLabel = slug => (TAGS.find(t => t[0] === slug) || [slug, slug])[1];
+  let M = null, sink = null, onChange = null;
+  const drafts = {};
+  function mload() {
+    if (M) return M;
+    M = { read: {}, checks: {}, marks: {} };
+    try {
+      const raw = JSON.parse(localStorage.getItem(MKEY) || 'null');
+      if (raw && typeof raw === 'object') ['read', 'checks', 'marks'].forEach(k => { if (raw[k] && typeof raw[k] === 'object') M[k] = raw[k]; });
+    } catch (e) { /* storage blocked: marks last for this visit only */ }
+    return M;
+  }
+  function msave() {
+    try { localStorage.setItem(MKEY, JSON.stringify(M)); } catch (e) { /* see above */ }
+    if (onChange) { try { onChange(); } catch (e) { /* a listener must not break saving */ } }
+  }
+  const stamp = () => new Date().toISOString();
+  const emit = ev => { if (sink) { try { sink(ev); } catch (e) { /* logging is best effort */ } } };
+  const oneLine = s => String(s || '').replace(/\s+/g, ' ').trim();
+
+  function setRead(id, on, title) {
+    mload();
+    if (on) M.read[id] = { at: stamp(), sent: !!sink }; else delete M.read[id];
+    msave(); emit({ type: 'read', id, on: !!on, title: oneLine(title) });
+  }
+  function setCheck(note, q, result, question) {
+    mload();
+    (M.checks[note] = M.checks[note] || {})[q] = { r: result, at: stamp(), sent: !!sink };
+    msave(); emit({ type: 'selfcheck', note, q: q + 1, result, question: oneLine(question).slice(0, 200) });
+  }
+  function setMark(key, rec) {
+    mload();
+    if (!rec || (!rec.tags.length && !rec.text)) {
+      const old = M.marks[key]; delete M.marks[key]; msave();
+      if (old) emit({ type: 'mark', note: old.note, section: old.sec, title: old.title, removed: true });
+      return;
+    }
+    M.marks[key] = { note: rec.note, sec: rec.sec, title: oneLine(rec.title), tags: rec.tags.slice(), text: rec.text, at: stamp(), sent: !!sink };
+    msave(); emit({ type: 'mark', note: rec.note, section: rec.sec, title: oneLine(rec.title), tags: rec.tags, text: rec.text });
+  }
+
+  function linkBtn(label, onClick) { const b = btn(label, 'marklink', onClick); return b; }
+
+  // The small control under a section heading.
+  function sectionControl(note, sec, title) {
+    const key = note + '#' + sec, box = el('div', 'marksec');
+    let open = false;
+    function draw(focusSlug) {
+      mload();
+      const rec = M.marks[key];
+      box.innerHTML = '';
+      const head = el('div', 'markhead');
+      if (rec && !open) {
+        rec.tags.forEach(t => head.append(el('span', 'markchip on', esc(tagLabel(t)))));
+        if (rec.text) head.append(el('span', 'marktext', esc(rec.text)));
+      }
+      const toggle = linkBtn(open ? 'Close' : (rec ? 'Edit' : 'Mark this section'), () => { open = !open; draw(); });
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      head.append(toggle);
+      box.append(head);
+      if (!open) return;
+      const ta = el('textarea', 'markta');
+      ta.id = 'mk-' + note + '-' + sec; ta.maxLength = 1000; ta.setAttribute('aria-label', 'Your question or note about this section');
+      ta.placeholder = 'Your question or note (optional)';
+      ta.value = drafts[key] != null ? drafts[key] : (rec ? rec.text : '');
+      ta.addEventListener('input', () => { drafts[key] = ta.value; });
+      const current = () => (M.marks[key] ? M.marks[key].tags : []);
+      const chips = el('div', 'markchips');
+      TAGS.forEach(([slug, label, help]) => {
+        const on = current().includes(slug);
+        const b = btn(label, 'markchip' + (on ? ' on' : ''), () => {
+          const tags = on ? current().filter(x => x !== slug) : current().concat(slug);
+          setMark(key, { note, sec, title, tags, text: ta.value.trim() });
+          draw(slug);
+        });
+        b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = help; b.dataset.slug = slug;
+        chips.append(b);
+      });
+      const row = el('div', 'wrow');
+      row.append(btn('Save', 'primary', () => { setMark(key, { note, sec, title, tags: current(), text: ta.value.trim() }); delete drafts[key]; open = false; draw(); }));
+      if (rec) row.append(btn('Remove', '', () => { setMark(key, null); delete drafts[key]; open = false; draw(); }));
+      box.append(chips, ta, row);
+      if (focusSlug) { const f = chips.querySelector('[data-slug="' + focusSlug + '"]'); if (f) f.focus(); }
+    }
+    draw();
+    return box;
+  }
+
+  // "Got it" / "Missed it" under a check-yourself answer.
+  function checkRow(note, q, question) {
+    const row = el('div', 'selfcheck');
+    function draw(focus) {
+      mload();
+      const cur = (M.checks[note] || {})[q];
+      row.innerHTML = '';
+      row.append(el('span', '', 'Did you get it before opening?'));
+      [['got', 'Got it'], ['missed', 'Missed it']].forEach(([r, label]) => {
+        const b = btn(label, r + (cur && cur.r === r ? ' on' : ''), () => { setCheck(note, q, r, question); draw(r); });
+        b.setAttribute('aria-pressed', cur && cur.r === r ? 'true' : 'false'); b.dataset.r = r;
+        row.append(b);
+      });
+      if (focus) { const f = row.querySelector('[data-r="' + focus + '"]'); if (f) f.focus(); }
+    }
+    draw();
+    return row;
+  }
+
+  // The end of a page: a question about the whole page, and the read toggle.
+  function pageTools(id, title, options) {
+    const o = options || {}, key = id + '#page', box = el('div', 'pagetools');
+    function draw(focusRead) {
+      mload();
+      const rec = M.marks[key];
+      box.innerHTML = '';
+      const label = el('label', 'pagelabel', 'A question about this whole page');
+      const ta = el('textarea', 'markta');
+      ta.id = 'mk-' + id + '-page'; label.htmlFor = ta.id; ta.maxLength = 1000;
+      ta.placeholder = 'Anything unclear, or anything you want explained further';
+      ta.value = drafts[key] != null ? drafts[key] : (rec ? rec.text : '');
+      ta.addEventListener('input', () => { drafts[key] = ta.value; });
+      const row = el('div', 'wrow');
+      row.append(btn(rec ? 'Update question' : 'Save question', '', () => { setMark(key, { note: id, sec: 'page', title: '(whole page)', tags: [], text: ta.value.trim() }); delete drafts[key]; draw(); }));
+      if (rec) row.append(btn('Remove', '', () => { setMark(key, null); delete drafts[key]; draw(); }), el('span', 'muted', 'Saved.'));
+      box.append(label, ta, row);
+      if (o.read !== false) {
+        const on = !!M.read[id];
+        const rb = btn(on ? 'Read. Tap to undo' : 'Mark as read', 'readbtn' + (on ? ' on' : ' primary'), () => { setRead(id, !on, title); draw(true); });
+        rb.setAttribute('aria-pressed', on ? 'true' : 'false');
+        const rrow = el('div', 'wrow'); rrow.append(rb);
+        box.append(rrow);
+        if (focusRead) rb.focus();
+      }
+    }
+    draw();
+    return box;
+  }
+
+  function attachMarks(card, n) {
+    Array.from(card.querySelectorAll('h3')).forEach((h, i) => h.after(sectionControl(n.id, i, h.textContent)));
+    Array.from(card.querySelectorAll('details')).forEach((d, q) => { const s = d.querySelector('summary'); d.append(checkRow(n.id, q, s ? s.textContent : '')); });
+    card.append(pageTools(n.id, n.title));
+  }
+
+  // Everything not yet sent, as { k, line-building data }.
+  function unsentItems() {
+    mload();
+    const items = [];
+    Object.keys(M.read).forEach(id => { if (!M.read[id].sent) items.push({ k: 'r:' + id, kind: 'read', id }); });
+    Object.keys(M.checks).forEach(note => Object.keys(M.checks[note]).forEach(q => { const c = M.checks[note][q]; if (!c.sent) items.push({ k: 'c:' + note + ':' + q, kind: 'check', note, q: Number(q), r: c.r }); }));
+    Object.keys(M.marks).forEach(key => { const m = M.marks[key]; if (!m.sent) items.push({ k: 'm:' + key, kind: 'mark', m }); });
+    return items;
+  }
+  const markLine = m => 'MARK ' + m.note + ' / "' + oneLine(m.title).replace(/"/g, "'") + '" [' + m.tags.join(', ') + ']: ' + oneLine(m.text);
+  const issueUrl = (title, body) => INBOX + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+
+  // The queue as one or more ready-to-open GitHub issue links: [{ title, body, url, keys, count }].
+  function sends(now) {
+    const items = unsentItems(), units = [];
+    const reads = items.filter(i => i.kind === 'read');
+    for (let i = 0; i < reads.length; i += 10) { const part = reads.slice(i, i + 10); units.push({ line: 'READ: ' + part.map(r => r.id).join(', '), keys: part.map(r => r.k) }); }
+    const byNote = {};
+    items.filter(i => i.kind === 'check').forEach(c => (byNote[c.note] = byNote[c.note] || []).push(c));
+    Object.keys(byNote).forEach(note => {
+      const list = byNote[note].sort((a, b) => a.q - b.q);
+      for (let i = 0; i < list.length; i += 10) { const part = list.slice(i, i + 10); units.push({ line: 'CHECK ' + note + ': ' + part.map(c => 'Q' + (c.q + 1) + ' ' + c.r).join(', '), keys: part.map(c => c.k) }); }
+    });
+    items.filter(i => i.kind === 'mark').forEach(i => {
+      let line = markLine(i.m);
+      while (issueUrl('x'.repeat(48), line).length > URL_LIMIT) line = line.slice(0, Math.floor(line.length * 0.8)) + ' (cut)';
+      units.push({ line, keys: [i.k] });
+    });
+    const d = now || new Date(), two = v => String(v).padStart(2, '0');
+    const when = d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate()) + ' ' + two(d.getHours()) + ':' + two(d.getMinutes());
+    const parts = [];
+    units.forEach(u => {
+      const last = parts[parts.length - 1];
+      if (last && issueUrl('x'.repeat(48), last.lines.concat(u.line).join('\n')).length <= URL_LIMIT) { last.lines.push(u.line); last.keys = last.keys.concat(u.keys); }
+      else parts.push({ lines: [u.line], keys: u.keys.slice() });
+    });
+    return parts.map((p, i) => {
+      const title = 'Marks ' + when + ' (' + p.keys.length + ' item' + (p.keys.length === 1 ? '' : 's') + ')' + (parts.length > 1 ? ' part ' + (i + 1) + ' of ' + parts.length : '');
+      const body = p.lines.join('\n');
+      return { title, body, url: issueUrl(title, body), keys: p.keys, count: p.keys.length };
+    });
+  }
+  function markSent(keys) {
+    mload();
+    keys.forEach(k => {
+      if (k.startsWith('r:')) { const r = M.read[k.slice(2)]; if (r) r.sent = true; }
+      else if (k.startsWith('c:')) { const rest = k.slice(2), cut = rest.lastIndexOf(':'), c = (M.checks[rest.slice(0, cut)] || {})[rest.slice(cut + 1)]; if (c) c.sent = true; }
+      else if (k.startsWith('m:')) { const m = M.marks[k.slice(2)]; if (m) m.sent = true; }
+    });
+    msave();
+  }
+  function removeItem(k) {
+    mload();
+    if (k.startsWith('r:')) setRead(k.slice(2), false, '');
+    else if (k.startsWith('c:')) { const rest = k.slice(2), cut = rest.lastIndexOf(':'), note = rest.slice(0, cut); if (M.checks[note]) { delete M.checks[note][rest.slice(cut + 1)]; if (!Object.keys(M.checks[note]).length) delete M.checks[note]; } msave(); emit({ type: 'selfcheck', note, q: Number(rest.slice(cut + 1)) + 1, removed: true }); }
+    else if (k.startsWith('m:')) setMark(k.slice(2), null);
+  }
+  function counts() {
+    mload();
+    const marks = Object.keys(M.marks).map(k => M.marks[k]);
+    let got = 0, missed = 0;
+    Object.keys(M.checks).forEach(n => Object.keys(M.checks[n]).forEach(q => { if (M.checks[n][q].r === 'got') got++; else missed++; }));
+    return { read: Object.keys(M.read).length, questions: marks.filter(m => m.text).length, tags: marks.reduce((s, m) => s + m.tags.length, 0), got, missed, unsent: unsentItems().length };
+  }
+  const marksApi = {
+    TAGS, tagLabel,
+    configure(o) { sink = o.sink || null; onChange = o.onChange || null; },
+    isRead(id) { return !!mload().read[id]; },
+    data() { return mload(); },
+    counts, sends, markSent, remove: removeItem, pageTools, unsent: unsentItems,
+  };
+
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget };
 
   window.Lab = {
+    marks: marksApi,
     stepper,
     callstack,
     planView,
@@ -651,6 +990,7 @@
       if (n.asked) card.append(el('div', 'asked', '<span class="muted">You asked:</span> ' + esc(n.asked)));
       card.append(el('div', '', n.html));
       window.Lab.hydrate(card, Object.assign({ configs: n.widgets || {} }, opts || {}));
+      if (!(opts && opts.marks === false)) attachMarks(card, n);
       return card;
     },
   };

@@ -1,4 +1,4 @@
-// Notes: answers to questions Darshan asked his tutor, saved so they are not lost in the terminal.
+// Notes: answers to questions asked during study, saved so they are not lost in the terminal.
 // Newest first. The tutor adds a note here whenever he asks about a concept.
 //
 // A note's html may contain a switch board:
@@ -786,16 +786,17 @@ int move = keys.nextInt();                // wait for a whole number</pre>
 <tr><th>In plain words</th><th>The term people use</th><th>What they do</th></tr>
 <tr><td>You</td><td>Cardholder</td><td>Own the card</td></tr>
 <tr><td>The shop</td><td>Merchant</td><td>Wants to be paid</td></tr>
-<tr><td>The shop's bank</td><td>Acquirer</td><td>Gives the shop its terminal and collects money for it</td></tr>
+<tr><td>The shop's bank</td><td>Acquirer</td><td>Gives the shop its card terminal. Collects the shop's card payments from the other banks and pays them into the shop's account.</td></tr>
 <tr><td>The card network</td><td>Scheme</td><td>Connects all the banks and sets the rules. Its logo is on the card.</td></tr>
 <tr><td>The card's bank</td><td>Issuer</td><td>Gave you the card and holds your money or your credit</td></tr>
 </table></div>
+<p>Real names for each of these, and how a card number points to its bank, are in <a href="#pay-who-is-who">payments note 2</a>.</p>
 
 <h3>Part 1: asking permission</h3>
 <p>This is called <b>authorisation</b>. Press Next step and watch the question travel out and the answer travel back.</p>
 <div data-widget="flow" data-ref="pay1-auth"></div>
 <p>Notice what did <b>not</b> happen: no money moved. The card's bank only promised that the 250 is good and set it aside. The shop hands over the goods on the strength of that promise.</p>
-<p>Step 1, the tap, hides a whole conversation between the chip and the terminal, made of small commands and replies. That conversation gets its own note later.</p>
+<p>Two things here are bigger than they look, and each gets its own note. The request in steps 2 to 4 is a message with a fixed layout: what is in it, and in what format, is payments note 3. Step 1, the tap, hides a whole conversation between the chip and the terminal, made of small commands and replies: that is note 4. How the one-time code is made and checked is note 5.</p>
 
 <h3>Part 2: moving the money</h3>
 <p>The money moves later, in two stages. <b>Clearing</b> is the banks agreeing on who owes what. <b>Settlement</b> is the money moving.</p>
@@ -819,9 +820,108 @@ int move = keys.nextInt();                // wait for a whole number</pre>
 
 <h3>Check yourself</h3>
 <details><summary>The terminal says Approved. Has the shop been paid?</summary><p>No. The card's bank has promised the money and set it aside. The shop is paid after clearing and settlement, usually a day or so later.</p></details>
-<details><summary>How does the network know which bank to send the request to?</summary><p>From the first digits of the card number, which identify the bank that gave out the card.</p></details>
+<details><summary>How does the network know which bank to send the request to?</summary><p>From the first digits of the card number, which identify the bank that gave out the card. Those digits are called the BIN, and payments note 2 looks at them closely.</p></details>
 <details><summary>Why does the shop's bank not ask the card's bank directly?</summary><p>It would need a connection and an agreement with every bank in the world. The network gives each bank one connection that reaches all the others.</p></details>
 <details><summary>A payment is approved at 6 pm and the shop's list is sent at 11 pm. Which stage is the 11 pm one?</summary><p>The start of clearing. Authorisation happened at 6 pm.</p></details>`,
+  },
+
+  {
+    id: 'pay-who-is-who',
+    kind: 'payments', order: 2,
+    date: '2026-10-12',
+    title: 'Who is who, with real names',
+    from: 'Payments note 2',
+    widgets: {
+      'pay2-route': {
+        parties: [
+          { short: "Shop's bank", name: "The shop's bank" },
+          { short: 'Visa', name: 'Visa' },
+          { short: 'Master card', name: 'Mastercard' },
+          { short: 'RuPay', name: 'RuPay' },
+          { short: "Card's bank", name: "The card's bank" },
+        ],
+        steps: [
+          { from: 0, to: 0, msg: '4111 11..', title: 'First customer: the card starts with 4', note: 'The request has reached the shop\'s bank. It reads the first digits of the card number. A number starting with 4 is a Visa card.' },
+          { from: 0, to: 1, msg: 'May I charge 250?', title: 'Out through Visa', note: 'The shop\'s bank has a connection to each network it works with. It sends this request down the Visa one.' },
+          { from: 1, to: 4, msg: 'May I charge 250?', title: 'Visa finds the bank', note: 'Visa keeps a table of which bank owns which starting digits. It looks up this card\'s first digits and delivers the request to the bank that gave out the card.' },
+          { from: 0, to: 0, msg: '6078 26..', title: 'Next customer: the card starts with 60', note: 'Same shop, same terminal, same shop\'s bank. This number starts with 60, which is a RuPay range.' },
+          { from: 0, to: 3, msg: 'May I charge 90?', title: 'Out through RuPay', note: 'So this request leaves by a different door.' },
+          { from: 3, to: 4, msg: 'May I charge 90?', title: 'RuPay finds the bank', note: 'RuPay looks in its own table and delivers to the bank behind this card. That is usually a different bank from the first customer\'s. Mastercard is connected too. It carried nothing here because neither card was a Mastercard.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>Note 1 used plain labels: the shop's bank, the network, the card's bank. This note puts real names on them, and shows how a string of digits on a card is enough to steer a request to the right bank out of thousands.</p>
+
+<h3>Real names in India</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Role</th><th>The term</th><th>Examples</th></tr>
+<tr><td>The shop's bank</td><td>Acquirer</td><td>HDFC Bank, Axis Bank, ICICI Bank, State Bank of India</td></tr>
+<tr><td>The card network</td><td>Scheme</td><td>Visa, Mastercard, RuPay, American Express</td></tr>
+<tr><td>The card's bank</td><td>Issuer</td><td>Any bank that gave out the card: State Bank of India, HDFC Bank, ICICI Bank, Kotak Mahindra Bank and many more</td></tr>
+</table></div>
+<p>Notice that the same names appear in two rows. "Shop's bank" and "card's bank" are <b>roles in one payment</b>, not kinds of bank. If your card is from HDFC Bank and the shop banks with Axis Bank, then HDFC Bank is the card's bank and Axis Bank is the shop's bank. In the next shop it can be the other way round.</p>
+<p>Three more things you will meet:</p>
+<ul>
+<li><b>Payment companies.</b> A shop often gets its terminal or its online checkout from a payment company such as Pine Labs or Razorpay. Behind that company there is still a bank doing the acquirer's job.</li>
+<li><b>A network that is also a bank.</b> American Express runs its network and also gives out many of its own cards, so it can be the network and the card's bank in the same payment.</li>
+<li><b>RuPay</b> is India's own network. It is run by the National Payments Corporation of India (NPCI).</li>
+</ul>
+
+<h3>The card number is an address</h3>
+<p>A card number is not a random string. Different parts of it mean different things. <b>Try it.</b> Press the test-number buttons, then change the first digits by hand and watch the network change.</p>
+<div data-widget="cardnum" data-key="pay2-card"></div>
+<div class="tablewrap"><table class="plain">
+<tr><th>Part</th><th>What it tells you</th></tr>
+<tr><td>The first digit or two</td><td>Which network. For example 4 is Visa, and 51 to 55 is Mastercard.</td></tr>
+<tr><td>The first 6 digits, or 8 on newer ranges</td><td>Which bank gave out the card. This part is called the <b>BIN</b>.</td></tr>
+<tr><td>The digits after that</td><td>Which account at that bank</td></tr>
+<tr><td>The last digit</td><td>A check digit, worked out from all the others</td></tr>
+</table></div>
+<p><b>BIN</b> stands for Bank Identification Number. You will also see it called an IIN, Issuer Identification Number, which is the same thing. For decades it was 6 digits. The world was running short of 6-digit combinations, so the standard was changed to 8 digits, and Visa and Mastercard moved to 8-digit BINs in April 2022. Many older cards still work on 6.</p>
+
+<h3>How the request finds its way</h3>
+<p>The shop's bank is connected to several networks. For each payment it reads the first digits and picks the network. The network then uses the BIN to find the card's bank.</p>
+<div data-widget="flow" data-ref="pay2-route"></div>
+<p>So there are two lookups, done by two different parties: the shop's bank chooses the <b>network</b>, and the network chooses the <b>bank</b>. Neither needs to know anything about the customer. The digits carry it all.</p>
+
+<h3>The last digit: a small algorithm</h3>
+<p>The last digit of a card number is not free. It is calculated from the other digits by a method called the <b>Luhn check</b>, invented by Hans Peter Luhn at IBM in the 1950s. The diagram above works it out live. The method:</p>
+<ol>
+<li>Start from the right-hand end and move left.</li>
+<li>Double every second digit. If doubling gives a number above 9, subtract 9.</li>
+<li>Add everything up.</li>
+<li>If the total ends in 0, the number passes.</li>
+</ol>
+<p><b>Try it.</b> In the diagram above, take the Visa test number and change any one digit. The check fails. Change it back and it passes.</p>
+<p>This check is <b>not security</b>. Anyone can calculate it. Its job is to catch slips: one wrong digit, or two neighbouring digits swapped, when a number is typed by hand. A terminal or a website can reject the number at once, before any request is sent. You will write this algorithm yourself in Java later. It needs a loop, an if and the % sign, all of which you already have.</p>
+
+<h3>Words to keep</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Word</th><th>Meaning</th></tr>
+<tr><td>BIN, or IIN</td><td>The first 6 or 8 digits of a card number. They identify the bank that gave out the card.</td></tr>
+<tr><td>Routing</td><td>Deciding where to send a request next</td></tr>
+<tr><td>Check digit</td><td>A digit worked out from the others, used to catch typing mistakes</td></tr>
+<tr><td>NPCI</td><td>The organisation that runs RuPay</td></tr>
+</table></div>
+
+<h3>Where your other questions are answered</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Your question</th><th>Where</th></tr>
+<tr><td>What data travels in the request, and in what format?</td><td>Payments note 3</td></tr>
+<tr><td>What do the chip and the terminal say to each other during the tap?</td><td>Payments note 4</td></tr>
+<tr><td>Which algorithms and keys prove the card is genuine?</td><td>Payments note 5</td></tr>
+<tr><td>How is a PIN kept secret on its way to the bank?</td><td>Payments note 6</td></tr>
+<tr><td>What is in the end-of-day files, and who pays whom?</td><td>Payments note 7</td></tr>
+</table></div>
+<p>Those notes are not written yet. They come one at a time as you finish the one before.</p>
+
+<h3>Check yourself</h3>
+<details><summary>Your card is from Kotak Mahindra Bank. You pay at a shop that banks with ICICI Bank. Who is the issuer and who is the acquirer?</summary><p>Kotak Mahindra Bank is the issuer, the card's bank. ICICI Bank is the acquirer, the shop's bank.</p></details>
+<details><summary>Who decides which network a request goes through, and what do they look at?</summary><p>The shop's bank. It looks at the first digits of the card number.</p></details>
+<details><summary>What is the BIN, and how long is it?</summary><p>The first digits of the card number, which identify the bank that gave out the card. 6 digits on older ranges, 8 on newer ones.</p></details>
+<details><summary>A card number passes the Luhn check. Does that prove the card is real?</summary><p>No. It only shows the digits are consistent with each other. Anyone can make up a number that passes. Proving the card is real needs the chip's one-time code, which is note 5.</p></details>`,
   },
 
   // ======================= questions he asked =======================

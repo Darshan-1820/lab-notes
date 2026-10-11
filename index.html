@@ -60,6 +60,17 @@
   a.planlink { display: grid; gap: 4px; text-decoration: none; color: var(--text); border-left: 4px solid var(--accent); }
   a.planlink .s { color: var(--dim); font-size: 14.5px; }
   a.planlink .more { color: var(--blue); font-weight: 600; font-size: 15px; margin-top: 4px; }
+  .markscard { display: grid; gap: 8px; border-left: 4px solid var(--blue); }
+  .markscard .counts { color: var(--dim); font-size: 15px; }
+  a.sendbtn { display: inline-block; text-decoration: none; background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); border-radius: 8px; padding: 9px 16px; font-weight: 600; }
+  .markrow { display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .markrow:first-of-type { border-top: 0; }
+  .markrow .where { font-size: 14px; color: var(--dim); }
+  .markrow .where a { font-weight: 600; }
+  .markrow .state { font: 12px var(--mono); letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
+  .markrow .state.wait { color: var(--warn); }
+  .markrow button { justify-self: start; padding: 4px 12px; font-size: 14px; }
+  .list a .readtick { margin-left: auto; flex: none; }
   .bar { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-block: 16px 0; }
   .bar a { text-decoration: none; font-weight: 600; }
   .stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
@@ -84,6 +95,83 @@
   const PAYMENTS = NOTES.filter(n => n.kind === 'payments').sort((a, b) => a.order - b.order);
   const ASKED = NOTES.filter(n => n.kind !== 'concept' && n.kind !== 'payments');
   const PLAN = window.PLAN;
+  const MARKS = Lab.marks;
+  const PKEY = 'lab-marks-pending';
+  const titleOf = id => { const m = WEEK.missions.find(x => x.id === id); if (m) return 'Lesson: ' + m.title; const n = NOTES.find(x => x.id === id); return n ? n.title : id; };
+  const mem = {};
+  function sget(k) { try { const v = sessionStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return mem[k] || null; } }
+  function sset(k, v) { mem[k] = v; try { if (v) sessionStorage.setItem(k, JSON.stringify(v)); else sessionStorage.removeItem(k); } catch (e) { /* kept in memory for this visit */ } }
+  const readTick = id => MARKS.isRead(id) ? '<span class="readtick" title="Marked as read">&#10003;</span>' : '';
+
+  // The card on the home page: what has been marked, and the Send button.
+  function marksCard() {
+    const card = el('div', 'card markscard');
+    function draw() {
+      const c = MARKS.counts(), sends = MARKS.sends(new Date()), pending = sget(PKEY), seq = sget(PKEY + '-seq');
+      card.innerHTML = '';
+      card.append(el('div', 'kicker', 'My marks'));
+      card.append(el('div', 'counts', c.read + ' read · ' + c.questions + ' question' + (c.questions === 1 ? '' : 's') + ' · ' + c.tags + ' tag' + (c.tags === 1 ? '' : 's') + ' · check yourself: ' + c.got + ' got, ' + c.missed + ' missed'));
+      if (pending && pending.keys && pending.keys.length && c.unsent > 0) {
+        card.append(el('div', '', '<b>Did you press Submit on GitHub?</b>'));
+        const row = el('div', 'wrow');
+        const yes = el('button', 'primary', 'Yes, sent'); yes.type = 'button';
+        yes.addEventListener('click', () => { MARKS.markSent(pending.keys); sset(PKEY + '-seq', pending.part < pending.total ? { part: pending.part, total: pending.total } : null); sset(PKEY, null); draw(); });
+        const no = el('button', '', 'Not yet'); no.type = 'button';
+        no.addEventListener('click', () => { sset(PKEY, null); draw(); });
+        row.append(yes, no);
+        card.append(row);
+      } else if (sends.length) {
+        if (pending) sset(PKEY, null);
+        const follows = seq && seq.total - seq.part === sends.length;
+        const part = follows ? seq.part + 1 : 1, total = follows ? seq.total : sends.length;
+        if (seq && !follows) sset(PKEY + '-seq', null);
+        const a = el('a', 'sendbtn', esc(total > 1 ? 'Send part ' + part + ' of ' + total + ' to tutor (' + sends[0].count + ')' : 'Send to tutor (' + sends[0].count + ')'));
+        a.href = sends[0].url; a.target = '_blank'; a.rel = 'noopener';
+        a.addEventListener('click', () => { sset(PKEY, { keys: sends[0].keys, part, total }); setTimeout(draw, 400); });
+        const row = el('div'); row.append(a);
+        card.append(row);
+      } else {
+        if (pending) sset(PKEY, null);
+        if (seq) sset(PKEY + '-seq', null);
+        card.append(el('div', 'muted', c.read + c.questions + c.tags + c.got + c.missed === 0 ? 'Nothing marked yet. Open a note and use "Mark this section" under any heading, or "Mark as read" at the end.' : 'Everything has been sent.'));
+      }
+      card.append(el('div', 'muted', 'Send opens GitHub in a new tab with your marks filled in. Press Submit there. You need to be signed in to GitHub in this browser. The inbox is private. <a href="#marks">See everything I marked</a>'));
+    }
+    draw();
+    // Coming back from the GitHub tab: show the "did you press Submit?" question straight away.
+    const back = () => { if (!card.isConnected) { document.removeEventListener('visibilitychange', back); window.removeEventListener('focus', back); return; } if (document.visibilityState === 'visible') draw(); };
+    document.addEventListener('visibilitychange', back);
+    window.addEventListener('focus', back);
+    return card;
+  }
+
+  // Everything marked, with remove buttons.
+  function marksPage() {
+    app.innerHTML = '';
+    app.append(bar());
+    const top = el('header');
+    top.append(el('div', 'kicker', 'My marks'), el('h1', '', 'Everything I marked'));
+    app.append(top);
+    const d = MARKS.data(), card = el('div', 'card');
+    const row = (key, whereHtml, bodyHtml, sent) => {
+      const r = el('div', 'markrow');
+      r.append(el('div', 'where', whereHtml));
+      if (bodyHtml) r.append(el('div', '', bodyHtml));
+      r.append(el('div', 'state' + (sent ? '' : ' wait'), sent ? 'Sent' : 'Not sent yet'));
+      const rm = el('button', '', 'Remove'); rm.type = 'button';
+      rm.addEventListener('click', () => { MARKS.remove(key); marksPage(); });
+      r.append(rm);
+      card.append(r);
+    };
+    const link = id => '<a href="#' + id + '">' + esc(titleOf(id)) + '</a>';
+    let n = 0;
+    Object.keys(d.marks).forEach(k => { const m = d.marks[k]; n++; row('m:' + k, link(m.note) + ' · ' + esc(m.title), m.tags.map(t => '<span class="markchip on">' + esc(MARKS.tagLabel(t)) + '</span>').join(' ') + (m.text ? '<div>' + esc(m.text) + '</div>' : ''), m.sent); });
+    Object.keys(d.checks).forEach(note => Object.keys(d.checks[note]).forEach(q => { const c = d.checks[note][q]; n++; row('c:' + note + ':' + q, link(note) + ' · check yourself, question ' + (Number(q) + 1), c.r === 'got' ? 'Got it' : 'Missed it', c.sent); }));
+    Object.keys(d.read).forEach(id => { n++; row('r:' + id, link(id), 'Marked as read', d.read[id].sent); });
+    if (!n) card.append(el('div', 'muted', 'Nothing marked yet.'));
+    app.append(card, bar());
+  }
+
 
   function home() {
     app.innerHTML = '';
@@ -98,10 +186,11 @@
       box.innerHTML = '<span class="kicker">Plan · ' + esc(PLAN.week.title) + '</span><b>' + esc(first.by) + '</b><span class="s">' + first.items.map(i => esc(i.text)).join(' · ') + '</span><span class="more">Open the full plan and roadmap</span>';
       app.append(box);
     }
+    app.append(marksCard());
     app.append(el('h2', 'section', esc(WEEK.title)));
     const lessons = el('nav', 'list'); lessons.setAttribute('aria-label', 'Lessons');
     WEEK.missions.forEach((m, i) => {
-      const a = el('a', '', '<span class="n">' + (i + 1) + '</span><span><b>' + esc(m.title) + '</b><span class="s">' + esc(m.skill) + '</span></span>');
+      const a = el('a', '', '<span class="n">' + (i + 1) + '</span><span><b>' + esc(m.title) + '</b><span class="s">' + esc(m.skill) + '</span></span>' + readTick(m.id));
       a.href = '#' + m.id; lessons.append(a);
     });
     app.append(lessons);
@@ -109,7 +198,7 @@
       app.append(el('h2', 'section', title));
       const nav = el('nav', 'list'); nav.setAttribute('aria-label', title);
       items.forEach((n, i) => {
-        const a = el('a', '', (numbered ? '<span class="n">' + (i + 1) + '</span>' : '') + '<span><b>' + esc(n.title) + '</b><span class="s">' + esc(numbered ? numbered + (i + 1) : n.date) + '</span></span>');
+        const a = el('a', '', (numbered ? '<span class="n">' + (i + 1) + '</span>' : '') + '<span><b>' + esc(n.title) + '</b><span class="s">' + esc(numbered ? numbered + (i + 1) : n.date) + '</span></span>' + readTick(n.id));
         a.href = '#' + n.id; nav.append(a);
       });
       if (!items.length) nav.append(el('div', 'card', 'Nothing here yet.'));
@@ -174,6 +263,7 @@
     });
     const concept = CONCEPTS.find(n => n.lesson === m.id);
     if (concept) body.append(el('div', 'card', 'To revise this topic later: <a href="#' + concept.id + '">' + esc(concept.title) + '</a>'));
+    const tools = el('div', 'card'); tools.append(MARKS.pageTools(m.id, m.title)); body.append(tools);
     app.append(body);
     Lab.hydrate(body, {});
     app.append(bar(WEEK.missions[idx - 1], WEEK.missions[idx + 1]));
@@ -201,7 +291,7 @@
   function route() {
     const id = location.hash.slice(1);
     const m = WEEK.missions.find(x => x.id === id), n = NOTES.find(x => x.id === id);
-    if (id === 'plan' && PLAN) plan(); else if (m) lesson(m); else if (n) note(n); else home();
+    if (id === 'plan' && PLAN) plan(); else if (id === 'marks') marksPage(); else if (m) lesson(m); else if (n) note(n); else home();
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);

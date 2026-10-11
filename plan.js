@@ -15,7 +15,7 @@ window.PLAN = {
       items: [
         { text: 'Lesson 8: The monster hits back (two conditions)', missions: ['w1m8'] },
         { text: 'Lesson 9: Roll the dice (random numbers)', missions: ['w1m9'] },
-        { text: 'On a break: read the payments note "What happens when you tap a card"' },
+        { text: 'On a break: payments note 2, "Who is who, with real names". Mark it as read and answer its check-yourself questions.' },
       ],
     },
     {
@@ -31,14 +31,14 @@ window.PLAN = {
       items: [
         { text: 'Lesson 12: the second timed challenge, the shop', missions: ['w1m12'] },
         { text: 'Rematch: one new problem on variables, if and while, with no help. Passing it is what counts as mastered.' },
-        { text: 'Payments: the second note, on what is inside the messages' },
+        { text: 'Payments: note 3, on what data travels in the request and in what format (written when note 2 is marked read)' },
         { text: 'Sunday: 15 minutes with the tutor to look at the week and set the next one' },
       ],
     },
   ],
   tracks: [
     { name: 'Programming', where: 'Laptop, evenings', time: 'About 90 minutes a day', what: 'The missions. This is the main track and the only one that needs the laptop every day.' },
-    { name: 'Payments', where: 'Phone, office breaks', time: 'About 10 minutes a day', what: 'One visual note at a time: how a payment travels, what the messages contain, how the chip proves itself. Reading only, no code yet.' },
+    { name: 'Payments', where: 'Phone, office breaks', time: 'About 10 minutes a day', what: 'One visual note at a time: how a payment travels, what the messages contain, how the chip proves itself. Reading only, no code yet. Mark sections, ask questions, then tap "Send to tutor".' },
     { name: 'Revision', where: 'Phone or laptop', time: '5 to 10 minutes a day', what: 'Concept notes and their "check yourself" questions, and a rematch problem each weekend.' },
     { name: 'Problem solving (DSA)', where: 'Laptop', time: 'Starts in week 3', what: 'Short daily problems once loops, arrays and methods are in place. Starting earlier would be guessing.' },
   ],
