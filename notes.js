@@ -413,6 +413,18 @@ if (alive) {
 <li>Whether the edge counts decides the last round. Being wrong by exactly one round is so common it has a name: an <b>off-by-one error</b>.</li>
 </ul>
 
+<h3>What you know when a loop ends</h3>
+<p>The program can only get past the closing brace at the moment the question is false. So on the first line after a <code>while (monsterHp > 0)</code> loop, one fact is guaranteed: monsterHp is 0 or less.</p>
+<pre>while (monsterHp > 0) {
+    monsterHp = monsterHp - damage;
+}
+if (monsterHp > 0) {
+    System.out.println("still standing");   // can never run
+} else {
+    System.out.println("You win!");
+}</pre>
+<p>Asking the same question again straight after the loop is pointless: the answer is always no. The first message can never print, whatever numbers you use. Code that can never run is called <b>dead code</b>. Remove it, and print the win message directly. Shorter code that says the same thing is easier to read and has fewer places for bugs to hide.</p>
+
 <h3>Why loops matter so much</h3>
 <p>A loop is how a short program does a large amount of work: ten lines can process ten million payments. It is also where a program spends nearly all its time. When software is slow, the cause is almost always a loop that runs more times than it needs to. Counting how many times a loop runs is the beginning of a subject you will meet in week 3.</p>
 
