@@ -5,8 +5,10 @@
 //   Lab.callstack(block, key)   -> the same, for code that calls methods (steps carry frames[])
 //   Lab.marks                   -> read ticks, check-yourself results, section tags and questions:
 //                                  configure({ sink, onChange }), isRead(id), counts(), sends(now),
-//                                  markSent(keys), remove(key), pageTools(id, title, { read }), data().
+//                                  markSent(keys), remove(key), pageTools(id, title, { read }), data(),
+//                                  and for maths drills drill(id), saveDrill(id, p), addRound(r).
 //                                  noteCard adds the controls itself unless opts.marks === false.
+//   Lab.register(name, make)    -> add a widget from another file (math.js does this)
 //   Lab.planView(plan, isDone)  -> the plan page (isDone(missionId) is optional, for ticks)
 //   Lab.stepper(block, key)     -> a line-by-line walk-through of code (block has code[] and steps[])
 //   Lab.hydrate(root, { run })  -> turns every [data-widget] inside root into a working diagram
@@ -759,10 +761,11 @@
   const drafts = {};
   function mload() {
     if (M) return M;
-    M = { read: {}, checks: {}, marks: {} };
+    M = { read: {}, checks: {}, marks: {}, drill: {}, rounds: [] };
     try {
       const raw = JSON.parse(localStorage.getItem(MKEY) || 'null');
-      if (raw && typeof raw === 'object') ['read', 'checks', 'marks'].forEach(k => { if (raw[k] && typeof raw[k] === 'object') M[k] = raw[k]; });
+      if (raw && typeof raw === 'object') ['read', 'checks', 'marks', 'drill'].forEach(k => { if (raw[k] && typeof raw[k] === 'object') M[k] = raw[k]; });
+      if (raw && Array.isArray(raw.rounds)) M.rounds = raw.rounds;
     } catch (e) { /* storage blocked: marks last for this visit only */ }
     return M;
   }
@@ -793,6 +796,19 @@
     }
     M.marks[key] = { note: rec.note, sec: rec.sec, title: oneLine(rec.title), tags: rec.tags.slice(), text: rec.text, at: stamp(), sent: !!sink };
     msave(); emit({ type: 'mark', note: rec.note, section: rec.sec, title: oneLine(rec.title), tags: rec.tags, text: rec.text });
+  }
+
+  // Maths drills: progress per drill (levels, lock-in days, bests) and one record per finished round.
+  function drillState(id) { return mload().drill[id] || null; }
+  function saveDrill(id, p) { mload(); M.drill[id] = p; msave(); }
+  function addRound(r) {
+    mload();
+    const rec = { id: Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), drill: r.drill, level: r.level, score: r.score, of: r.of, time: r.time, at: stamp(), sent: !!sink };
+    M.rounds.push(rec);
+    const sentOnes = M.rounds.filter(x => x.sent);
+    if (sentOnes.length > 60) { const drop = new Set(sentOnes.slice(0, sentOnes.length - 60).map(x => x.id)); M.rounds = M.rounds.filter(x => !drop.has(x.id)); }
+    msave();
+    emit({ type: 'drill', drill: r.drill, level: r.level, score: r.score, of: r.of, seconds: r.time, unlocked: !!r.unlocked, lockedIn: !!r.lockedIn, drillLocked: !!r.drillLocked });
   }
 
   function linkBtn(label, onClick) { const b = btn(label, 'marklink', onClick); return b; }
@@ -904,6 +920,7 @@
     Object.keys(M.read).forEach(id => { if (!M.read[id].sent) items.push({ k: 'r:' + id, kind: 'read', id }); });
     Object.keys(M.checks).forEach(note => Object.keys(M.checks[note]).forEach(q => { const c = M.checks[note][q]; if (!c.sent) items.push({ k: 'c:' + note + ':' + q, kind: 'check', note, q: Number(q), r: c.r }); }));
     Object.keys(M.marks).forEach(key => { const m = M.marks[key]; if (!m.sent) items.push({ k: 'm:' + key, kind: 'mark', m }); });
+    M.rounds.forEach(r => { if (!r.sent) items.push({ k: 'd:' + r.id, kind: 'drill', r }); });
     return items;
   }
   const markLine = m => 'MARK ' + m.note + ' / "' + oneLine(m.title).replace(/"/g, "'") + '" [' + m.tags.join(', ') + ']: ' + oneLine(m.text);
@@ -925,6 +942,7 @@
       while (issueUrl('x'.repeat(48), line).length > URL_LIMIT) line = line.slice(0, Math.floor(line.length * 0.8)) + ' (cut)';
       units.push({ line, keys: [i.k] });
     });
+    items.filter(i => i.kind === 'drill').forEach(i => units.push({ line: 'DRILL ' + i.r.drill + ' L' + i.r.level + ': ' + i.r.score + '/' + i.r.of + ' time ' + i.r.time + 's', keys: [i.k] }));
     const d = now || new Date(), two = v => String(v).padStart(2, '0');
     const when = d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate()) + ' ' + two(d.getHours()) + ':' + two(d.getMinutes());
     const parts = [];
@@ -945,6 +963,7 @@
       if (k.startsWith('r:')) { const r = M.read[k.slice(2)]; if (r) r.sent = true; }
       else if (k.startsWith('c:')) { const rest = k.slice(2), cut = rest.lastIndexOf(':'), c = (M.checks[rest.slice(0, cut)] || {})[rest.slice(cut + 1)]; if (c) c.sent = true; }
       else if (k.startsWith('m:')) { const m = M.marks[k.slice(2)]; if (m) m.sent = true; }
+      else if (k.startsWith('d:')) { const r = M.rounds.find(x => x.id === k.slice(2)); if (r) r.sent = true; }
     });
     msave();
   }
@@ -953,13 +972,14 @@
     if (k.startsWith('r:')) setRead(k.slice(2), false, '');
     else if (k.startsWith('c:')) { const rest = k.slice(2), cut = rest.lastIndexOf(':'), note = rest.slice(0, cut); if (M.checks[note]) { delete M.checks[note][rest.slice(cut + 1)]; if (!Object.keys(M.checks[note]).length) delete M.checks[note]; } msave(); emit({ type: 'selfcheck', note, q: Number(rest.slice(cut + 1)) + 1, removed: true }); }
     else if (k.startsWith('m:')) setMark(k.slice(2), null);
+    else if (k.startsWith('d:')) { M.rounds = M.rounds.filter(x => x.id !== k.slice(2)); msave(); }
   }
   function counts() {
     mload();
     const marks = Object.keys(M.marks).map(k => M.marks[k]);
     let got = 0, missed = 0;
     Object.keys(M.checks).forEach(n => Object.keys(M.checks[n]).forEach(q => { if (M.checks[n][q].r === 'got') got++; else missed++; }));
-    return { read: Object.keys(M.read).length, questions: marks.filter(m => m.text).length, tags: marks.reduce((s, m) => s + m.tags.length, 0), got, missed, unsent: unsentItems().length };
+    return { read: Object.keys(M.read).length, questions: marks.filter(m => m.text).length, tags: marks.reduce((s, m) => s + m.tags.length, 0), got, missed, rounds: M.rounds.length, unsent: unsentItems().length };
   }
   const marksApi = {
     TAGS, tagLabel,
@@ -967,12 +987,14 @@
     isRead(id) { return !!mload().read[id]; },
     data() { return mload(); },
     counts, sends, markSent, remove: removeItem, pageTools, unsent: unsentItems,
+    drill: drillState, saveDrill, addRound,
   };
 
   const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget };
 
   window.Lab = {
     marks: marksApi,
+    register(name, make) { makers[name] = make; },   // lets math.js add its own diagrams
     stepper,
     callstack,
     planView,

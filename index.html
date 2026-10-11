@@ -83,7 +83,9 @@
 <script src="week1-game.js"></script>
 <script src="notes.js"></script>
 <script src="plan.js"></script>
+<script src="math-data.js"></script>
 <script src="widgets.js"></script>
+<script src="math.js"></script>
 <script>
 (function () {
   const WEEK = window.WEEK, NOTES = window.NOTES || [], app = document.getElementById('app');
@@ -95,9 +97,10 @@
   const PAYMENTS = NOTES.filter(n => n.kind === 'payments').sort((a, b) => a.order - b.order);
   const ASKED = NOTES.filter(n => n.kind !== 'concept' && n.kind !== 'payments');
   const PLAN = window.PLAN;
+  const MATHS = (window.MATH ? window.MATH.modules : []).slice().sort((a, b) => a.order - b.order);
   const MARKS = Lab.marks;
   const PKEY = 'lab-marks-pending';
-  const titleOf = id => { const m = WEEK.missions.find(x => x.id === id); if (m) return 'Lesson: ' + m.title; const n = NOTES.find(x => x.id === id); return n ? n.title : id; };
+  const titleOf = id => { const m = WEEK.missions.find(x => x.id === id); if (m) return 'Lesson: ' + m.title; const n = NOTES.find(x => x.id === id); if (n) return n.title; const mm = MATHS.find(x => x.id === id); return mm ? 'Maths: ' + mm.title : id; };
   const mem = {};
   function sget(k) { try { const v = sessionStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return mem[k] || null; } }
   function sset(k, v) { mem[k] = v; try { if (v) sessionStorage.setItem(k, JSON.stringify(v)); else sessionStorage.removeItem(k); } catch (e) { /* kept in memory for this visit */ } }
@@ -110,7 +113,7 @@
       const c = MARKS.counts(), sends = MARKS.sends(new Date()), pending = sget(PKEY), seq = sget(PKEY + '-seq');
       card.innerHTML = '';
       card.append(el('div', 'kicker', 'My marks'));
-      card.append(el('div', 'counts', c.read + ' read · ' + c.questions + ' question' + (c.questions === 1 ? '' : 's') + ' · ' + c.tags + ' tag' + (c.tags === 1 ? '' : 's') + ' · check yourself: ' + c.got + ' got, ' + c.missed + ' missed'));
+      card.append(el('div', 'counts', (c.rounds ? c.rounds + ' drill round' + (c.rounds === 1 ? '' : 's') + ' · ' : '') + c.read + ' read · ' + c.questions + ' question' + (c.questions === 1 ? '' : 's') + ' · ' + c.tags + ' tag' + (c.tags === 1 ? '' : 's') + ' · check yourself: ' + c.got + ' got, ' + c.missed + ' missed'));
       if (pending && pending.keys && pending.keys.length && c.unsent > 0) {
         card.append(el('div', '', '<b>Did you press Submit on GitHub?</b>'));
         const row = el('div', 'wrow');
@@ -133,7 +136,7 @@
       } else {
         if (pending) sset(PKEY, null);
         if (seq) sset(PKEY + '-seq', null);
-        card.append(el('div', 'muted', c.read + c.questions + c.tags + c.got + c.missed === 0 ? 'Nothing marked yet. Open a note and use "Mark this section" under any heading, or "Mark as read" at the end.' : 'Everything has been sent.'));
+        card.append(el('div', 'muted', c.read + c.questions + c.tags + c.got + c.missed + c.rounds === 0 ? 'Nothing marked yet. Open a note and use "Mark this section" under any heading, or "Mark as read" at the end.' : 'Everything has been sent.'));
       }
       card.append(el('div', 'muted', 'Send opens GitHub in a new tab with your marks filled in. Press Submit there. You need to be signed in to GitHub in this browser. The inbox is private. <a href="#marks">See everything I marked</a>'));
     }
@@ -168,6 +171,7 @@
     Object.keys(d.marks).forEach(k => { const m = d.marks[k]; n++; row('m:' + k, link(m.note) + ' · ' + esc(m.title), m.tags.map(t => '<span class="markchip on">' + esc(MARKS.tagLabel(t)) + '</span>').join(' ') + (m.text ? '<div>' + esc(m.text) + '</div>' : ''), m.sent); });
     Object.keys(d.checks).forEach(note => Object.keys(d.checks[note]).forEach(q => { const c = d.checks[note][q]; n++; row('c:' + note + ':' + q, link(note) + ' · check yourself, question ' + (Number(q) + 1), c.r === 'got' ? 'Got it' : 'Missed it', c.sent); }));
     Object.keys(d.read).forEach(id => { n++; row('r:' + id, link(id), 'Marked as read', d.read[id].sent); });
+    (d.rounds || []).slice().reverse().forEach(r => { n++; const dr = LabMath.DRILLS[r.drill]; row('d:' + r.id, 'Maths drill · ' + esc(dr ? dr.title : r.drill) + ' · level ' + r.level, r.score + ' / ' + r.of + ' in ' + r.time + ' seconds', r.sent); });
     if (!n) card.append(el('div', 'muted', 'Nothing marked yet.'));
     app.append(card, bar());
   }
@@ -177,7 +181,7 @@
     app.innerHTML = '';
     const top = el('header', 'top');
     top.append(el('div', 'kicker', 'Engineering Lab'), el('h1', '', 'Lessons and notes'),
-      el('p', 'lede', 'For reading on a break or revising at the laptop. The diagrams and predictions work here. The building is done in the lab on the computer.'));
+      el('p', 'lede', 'For a break or for revising at the laptop. The diagrams, predictions and maths drills work here. The programming is done in the lab on the computer.'));
     app.append(top);
     if (PLAN) {
       const first = PLAN.targets[0];
@@ -194,6 +198,17 @@
       a.href = '#' + m.id; lessons.append(a);
     });
     app.append(lessons);
+    if (MATHS.length) {
+      app.append(el('h2', 'section', 'Maths: practise on a break'));
+      const nav = el('nav', 'list'); nav.setAttribute('aria-label', 'Maths');
+      MATHS.forEach((m, i) => {
+        const sum = LabMath.summary(m);
+        const state = sum.locked === sum.drills ? 'All ' + sum.drills + ' drills locked in' : sum.locked ? sum.locked + ' of ' + sum.drills + ' drills locked in' : sum.started ? 'Started · ' + sum.drills + ' drills' : sum.drills + ' drills · ' + m.where;
+        const a = el('a', '', '<span class="n">' + (i + 1) + '</span><span><b>' + esc(m.title) + '</b><span class="s">' + esc(state) + '</span></span>' + readTick(m.id));
+        a.href = '#' + m.id; nav.append(a);
+      });
+      app.append(nav);
+    }
     [['Concept notes: revise a topic', CONCEPTS, 'Goes with lesson '], ['Payments: how money moves', PAYMENTS, 'Payments note '], ['Questions I asked', ASKED, '']].forEach(([title, items, numbered]) => {
       app.append(el('h2', 'section', title));
       const nav = el('nav', 'list'); nav.setAttribute('aria-label', title);
@@ -279,6 +294,14 @@
     app.append(bar(group[idx - 1], group[idx + 1]));
   }
 
+  function maths(m) {
+    const idx = MATHS.indexOf(m);
+    app.innerHTML = '';
+    app.append(bar(MATHS[idx - 1], MATHS[idx + 1]));
+    app.append(LabMath.modulePage(m, {}));
+    app.append(bar(MATHS[idx - 1], MATHS[idx + 1]));
+  }
+
   function plan() {
     app.innerHTML = '';
     app.append(bar());
@@ -290,8 +313,8 @@
 
   function route() {
     const id = location.hash.slice(1);
-    const m = WEEK.missions.find(x => x.id === id), n = NOTES.find(x => x.id === id);
-    if (id === 'plan' && PLAN) plan(); else if (id === 'marks') marksPage(); else if (m) lesson(m); else if (n) note(n); else home();
+    const m = WEEK.missions.find(x => x.id === id), n = NOTES.find(x => x.id === id), mm = MATHS.find(x => x.id === id);
+    if (id === 'plan' && PLAN) plan(); else if (id === 'marks') marksPage(); else if (m) lesson(m); else if (n) note(n); else if (mm) maths(mm); else home();
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);

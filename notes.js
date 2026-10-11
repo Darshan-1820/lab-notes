@@ -461,8 +461,75 @@ wasted = heroHp - 100;    // replaces each round:  0, then 10, then 30</pre>
   },
 
   {
+    id: 'concept-read-problem',
+    kind: 'concept', lesson: 'w1m7', order: 7,
+    date: '2026-10-12',
+    title: 'How to read a problem before you code it',
+    from: 'Goes with lesson 7: the timed challenge, and every challenge after it',
+    html: `
+<h3>The idea</h3>
+<p>Most wrong programs are not wrong because of the code. They solve a slightly different problem from the one that was asked. The fix is not to read faster or think harder. It is five small steps you do <b>before</b> typing, and they take about three minutes.</p>
+
+<h3>The example: the potion problem</h3>
+<p>"A hero has 20 HP and finds 3 potions. Each potion heals 30 HP, but HP can never go above 100. Drink the potions one at a time and print the HP after each one."</p>
+<p>A natural first program keeps drinking <b>while the HP is below 100</b>. It prints exactly the expected three lines, and it is wrong. The five steps show why.</p>
+
+<h3>Step 1: pull out the givens</h3>
+<p>Write down every number and what it is. Do not skip the ones that look obvious.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Given</th><th>Value</th><th>Will it become</th></tr>
+<tr><td>Starting HP</td><td>20</td><td>a box that changes</td></tr>
+<tr><td>Number of potions</td><td>3</td><td>how many times the loop runs</td></tr>
+<tr><td>Heal per potion</td><td>30</td><td>a box that stays the same</td></tr>
+<tr><td>Most HP allowed</td><td>100</td><td>the limit in an if</td></tr>
+</table></div>
+<p>The "3" is in the list, so the program must use it somewhere. A program that never mentions one of the givens is almost always solving a different problem.</p>
+
+<h3>Step 2: find the stop rule</h3>
+<p>For anything that repeats, ask: <b>according to the problem, what makes it stop?</b> Here the words are "finds 3 potions" and "drink the potions". It stops when the potions run out. It does not say "until the hero is healed".</p>
+<p>This one sentence decides the loop's question: count potions, not HP.</p>
+
+<h3>Step 3: say it back in one sentence</h3>
+<p>"Three times: add 30 to the HP, cut it back to 100 if it went over, print it." If you cannot say it in one or two plain sentences, you are not ready to code it, and that is useful to find out now.</p>
+
+<h3>Step 4: do one small case by hand</h3>
+<p>Before any code, work the example on paper as a table. One row per round, one column per box.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Potion</th><th>HP before</th><th>After healing</th><th>Cut back to</th></tr>
+<tr><td>1</td><td>20</td><td>50</td><td>50</td></tr>
+<tr><td>2</td><td>50</td><td>80</td><td>80</td></tr>
+<tr><td>3</td><td>80</td><td>110</td><td>100</td></tr>
+</table></div>
+<p>Now you know what the right output is before the program exists, so you can tell whether the program is right.</p>
+
+<h3>Step 5: pick a second input that could prove you wrong</h3>
+<p>One example is not enough, because two different readings of a problem can agree on it. Choose another starting value where they would disagree.</p>
+<p><b>Try it.</b> Start at 20: the two readings print the same thing. Now try 50, then 95.</p>
+<div data-widget="readings" data-key="c7-readings" data-start="20"></div>
+<p>With 20 HP the wrong reading is invisible. With 50 HP it drinks only two potions and the mistake is obvious. A good second input is one that sits on an edge: already nearly full, exactly at the limit, zero, or one more than the example.</p>
+
+<h3>Then compare, row by row</h3>
+<p>Run the program on the second input and put its output next to your hand-made table. The first row that differs points at the line of code that is wrong. This is faster and more reliable than staring at the code.</p>
+
+<h3>The five steps</h3>
+<ol>
+<li>List the givens. Each one should appear in the program.</li>
+<li>Find the stop rule in the problem's own words.</li>
+<li>Say the whole thing back in one sentence.</li>
+<li>Work one small case by hand, as a table.</li>
+<li>Choose a second input that would expose a misreading, and compare by table.</li>
+</ol>
+
+<h3>Check yourself</h3>
+<details><summary>"A shop has 5 customers. Each buys items until their basket holds 4 items." What stops the outer loop, and what stops the inner one?</summary><p>The outer loop stops after 5 customers: a count. The inner loop stops when the basket holds 4 items: a condition on the basket. Two different stop rules, each taken from the wording.</p></details>
+<details><summary>Your program prints the sample output exactly. Is it correct?</summary><p>Not yet known. It agrees with the problem on one input. Try a second input chosen to sit on an edge before trusting it.</p></details>
+<details><summary>The potion program gives the right lines for 20 HP. Which starting HP would you try next, and why?</summary><p>Something close to full, such as 95 or 50. Then the HP reaches 100 before the potions run out, and the two readings print different numbers of lines.</p></details>
+<details><summary>A problem mentions the number 7, and your finished program has no 7 in it and no box holding 7. What does that suggest?</summary><p>That the program ignores something the problem asked for. Go back to step 1.</p></details>`,
+  },
+
+  {
     id: 'concept-and-or',
-    kind: 'concept', lesson: 'w1m8', order: 7,
+    kind: 'concept', lesson: 'w1m8', order: 8,
     date: '2026-10-12',
     title: 'Joining questions: and, or, not',
     from: 'Goes with lesson 8: The monster hits back',
@@ -524,7 +591,7 @@ heroHp <= 0 || monsterHp <= 0</pre>
   },
   {
     id: 'concept-random',
-    kind: 'concept', lesson: 'w1m9', order: 8,
+    kind: 'concept', lesson: 'w1m9', order: 9,
     date: '2026-10-12',
     title: 'Random numbers, and why they are not really random',
     from: 'Goes with lesson 9: Roll the dice',
@@ -582,7 +649,7 @@ System.out.println(dice.nextInt(21) + 10);   // 28</pre>
   },
   {
     id: 'concept-input',
-    kind: 'concept', lesson: 'w1m10', order: 9,
+    kind: 'concept', lesson: 'w1m10', order: 10,
     date: '2026-10-12',
     title: 'Input: reading what someone types',
     from: 'Goes with lesson 10: Your move',
@@ -652,7 +719,7 @@ int move = keys.nextInt();                // wait for a whole number</pre>
   },
   {
     id: 'concept-methods',
-    kind: 'concept', lesson: 'w1m11', order: 10,
+    kind: 'concept', lesson: 'w1m11', order: 11,
     date: '2026-10-12',
     title: 'Methods: naming a piece of work',
     from: 'Goes with lesson 11: Give the moves names',
@@ -879,7 +946,7 @@ int move = keys.nextInt();                // wait for a whole number</pre>
 <tr><td>The digits after that</td><td>Which account at that bank</td></tr>
 <tr><td>The last digit</td><td>A check digit, worked out from all the others</td></tr>
 </table></div>
-<p><b>BIN</b> stands for Bank Identification Number. You will also see it called an IIN, Issuer Identification Number, which is the same thing. For decades it was 6 digits. The world was running short of 6-digit combinations, so the standard was changed to 8 digits, and Visa and Mastercard moved to 8-digit BINs in April 2022. Many older cards still work on 6.</p>
+<p><b>BIN</b> stands for Bank Identification Number. You will also see it called an IIN, Issuer Identification Number, which is the same thing. For decades it was 6 digits. The world was running short of 6-digit combinations, so the international standard was changed to allow 8 digits. From April 2022 Visa and Mastercard required the systems that handle payments to cope with 8-digit BINs. Both lengths are in use today, and the card number itself stayed the same length.</p>
 
 <h3>How the request finds its way</h3>
 <p>The shop's bank is connected to several networks. For each payment it reads the first digits and picks the network. The network then uses the BIN to find the card's bank.</p>
@@ -887,7 +954,7 @@ int move = keys.nextInt();                // wait for a whole number</pre>
 <p>So there are two lookups, done by two different parties: the shop's bank chooses the <b>network</b>, and the network chooses the <b>bank</b>. Neither needs to know anything about the customer. The digits carry it all.</p>
 
 <h3>The last digit: a small algorithm</h3>
-<p>The last digit of a card number is not free. It is calculated from the other digits by a method called the <b>Luhn check</b>, invented by Hans Peter Luhn at IBM in the 1950s. The diagram above works it out live. The method:</p>
+<p>The last digit of a card number is not free. It is calculated from the other digits by a method called the <b>Luhn check</b>, invented by Hans Peter Luhn at IBM and described in a patent granted in 1960. It catches typing mistakes. It is not a security measure. The diagram above works it out live. The method:</p>
 <ol>
 <li>Start from the right-hand end and move left.</li>
 <li>Double every second digit. If doubling gives a number above 9, subtract 9.</li>
