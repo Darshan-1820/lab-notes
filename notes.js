@@ -1246,6 +1246,60 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'no-input-error',
+    date: '2026-10-15',
+    title: 'Reading the red message when nobody types',
+    from: 'Week 1, lesson 10: Your move',
+    asked: 'Break it: nobody at the keyboard. Press Run here. This button gives your program no input at all. Read the red message and find the line of your file it names. (He asked: please explain.)',
+    html: `
+<h3>The short answer</h3>
+<p>Your program reached line 31, <code>int userKey = key.nextInt();</code>, and asked for a number. There was no number, and none could ever come, so Java stopped the program there and printed a report of where it was. Nothing is wrong with your code: the experiment was to see this happen.</p>
+
+<h3>What happened, in order</h3>
+<ol>
+<li>Everything up to "Round 1" and the question ran normally. That is why those lines are printed.</li>
+<li>Line 31 called <code>key.nextInt()</code>. Remember the queue from lesson 10: the Scanner looks in the queue of typed characters.</li>
+<li>The queue was empty. In the VS Code terminal, an empty queue just means "wait": the keyboard is still connected, so you might type something. But this Run button connects <b>nothing</b>, and tells the program "there will never be any input". So waiting is pointless.</li>
+<li><code>nextInt</code> cannot hand back a number it does not have, and it is not allowed to invent one. Its only choice is to stop the program and say why.</li>
+</ol>
+<p>That is the difference between the two buttons. "Run and check" types a prepared list of moves into the queue. "Run" here types nothing and closes the queue.</p>
+
+<h3>Every piece of the red message</h3>
+<pre>Exception in thread "main" java.util.NoSuchElementException</pre>
+<ul>
+<li><b>Exception</b>: Java's word for "something went wrong and this line cannot carry on". When it happens and nothing in your code deals with it, the program stops and prints this report.</li>
+<li><b>in thread "main"</b>: a program can do several jobs at the same time, and each job is called a thread. Your program has only one, and Java names it "main", after your <code>main</code> method. <span class="later">Coming much later: programs that do several jobs at once (threads)</span></li>
+<li><b>java.util.NoSuchElementException</b>: the name of what went wrong, in the same <code>java.util</code> folder as <code>Scanner</code> and <code>Random</code>. It reads like a sentence: "no such element", meaning "there is no next item to give you". Exception names are chosen to be read like this, so read the name first: it usually tells you the problem.</li>
+</ul>
+<p>Then come the <code>at</code> lines. This list is called the <b>stack trace</b>. Each line is one method that was still running at the moment it stopped, written as</p>
+<pre>at  folder.Class.method(File.java:line)</pre>
+<p>The list goes from where it stopped (top) back to where it began (bottom). Read it from the bottom up and it is the story of the calls:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Line of the report, bottom first</th><th>What it means</th></tr>
+<tr><td><code>at Game.main(Game.java:31)</code></td><td><b>Your code.</b> Your <code>main</code>, on line 31, called <code>key.nextInt()</code>.</td></tr>
+<tr><td><code>at ...Scanner.nextInt(Scanner.java:2212)</code></td><td>Inside Java's own Scanner. The <code>nextInt()</code> you called does one thing: it calls another method that is also named nextInt, but takes a number saying which counting system to use, and passes 10, for normal decimal numbers. <span class="later">Coming in weeks 4 to 5: two methods with the same name but different brackets (overloading)</span></td></tr>
+<tr><td><code>at ...Scanner.nextInt(Scanner.java:2258)</code></td><td>That second nextInt asks for the next piece of text that looks like a whole number.</td></tr>
+<tr><td><code>at ...Scanner.next(Scanner.java:1594)</code></td><td><code>next</code> looks for that piece, finds nothing, and calls the method that reports the problem.</td></tr>
+<tr><td><code>at ...Scanner.throwFor(Scanner.java:937)</code></td><td>The top: where it actually stopped. Line 937 of Java's Scanner.java reads, in plain words: "if the input is closed and everything in it has been read, stop with NoSuchElementException". That is exactly your situation.</td></tr>
+</table></div>
+<p>(Those four Scanner lines were checked against the real Scanner.java of your Java 17, from the <code>lib/src.zip</code> file mentioned in the java.util.Random note.)</p>
+<p><code>java.base/</code> at the front of the Scanner lines is the name of the part of Java those files are in; you can ignore it.</p>
+
+<h3>The rule for finding your line</h3>
+<p>Most of a stack trace is Java's own code, which is not where the mistake is. So: <b>read the exception name, then go down the list to the first line that names one of your files.</b> Here that is <code>Game.java:31</code>. Open your file at line 31 and ask: "what does this line need that it did not get?" Here: a typed number.</p>
+<p>Real error reports from big programs can have fifty <code>at</code> lines. The rule stays the same, and it is one of the most used skills in a developer's day.</p>
+
+<h3>Why the stack trace is a pile</h3>
+<p>Each method that calls another pauses until it gets an answer, so the paused methods pile up: main at the bottom, the newest call on top. When something goes wrong, Java prints the pile from the top down. You will see this pile drawn step by step in lesson 11, where it is called the <b>call stack</b>.</p>
+
+<h3>What to remember</h3>
+<ul>
+<li>The first line names what went wrong. Read the name like a sentence.</li>
+<li>Go down the <code>at</code> lines to the first one naming your file. That is where to look.</li>
+<li><code>NoSuchElementException</code> from a Scanner means: you asked for input that is not there. In the "Run and check" games it would mean your loop asked for more moves than a game needs.</li>
+</ul>`,
+  },
+  {
     id: 'seed7-no-fail',
     date: '2026-10-15',
     title: 'With new Random(7), why did no check fail?',
