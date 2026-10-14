@@ -711,6 +711,12 @@
   // ---- the plan: this week, how a day is split, the roadmap ----
   function planView(plan, isDone) {
     const wrap = el('div', 'planwrap');
+    if (plan.review) {   // the tutor's review of the last session
+      const r = plan.review, card = el('div', 'card');
+      card.append(el('h2', 'plan-h', esc(r.title)), el('p', 'muted', esc(r.when)));
+      r.points.forEach(pt => card.append(el('h3', 'plan-by', esc(pt.label)), el('p', '', esc(pt.text))));
+      wrap.append(card);
+    }
     const week = el('div', 'card');
     week.append(el('h2', 'plan-h', esc(plan.week.title)), el('p', '', esc(plan.week.goal)));
     plan.targets.forEach(t => {

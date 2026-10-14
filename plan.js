@@ -4,19 +4,37 @@
 
 window.PLAN = {
   updated: '2026-10-15',
+  // 15 Oct, 03:10: lessons 8 to 10 passed (0 hints); a review of the night was added (review, below).
   // 15 Oct: he asked "how far am I from OOP and DSA?" and said he will finish lessons 8 to 12 in one go.
   // The plan was pulled forward again, and a "where you are" map was added (position, below).
+  // The tutor's review of the last session, shown first on the plan page.
+  review: {
+    title: 'Review of your night, Thursday 15 October',
+    when: 'About 00:50 to 03:10. Lessons 8, 9 and 10 passed. 770 XP.',
+    points: [
+      { label: 'What went well', text: 'Three lessons, zero hints, every one passed by your own fixes (3, 3 and 5 attempts). Your lesson 8 prediction (-1 3) was right. And your questions were the best part of the night: your "largest 40" mark found a real bug in the lab, and asking "why are the fights identical?" and "please explain the red message" pushed the notes to explain things properly. Keep marking anything that does not add up. You are often right.' },
+      { label: 'The one habit to build', text: 'Exact output. Three of your five lesson 10 attempts failed on one full stop, and in lesson 7 four attempts failed on System.err in place of System.out. The logic was right both times. The habit: when a check fails on text, put the expected line from the task next to yours and compare them letter by letter, before you change any logic. Computers that talk to each other, like a terminal and a bank, compare messages exactly too, so this habit is worth a lot later.' },
+      { label: 'Reading errors', text: 'Tonight you met your first stack trace on purpose. The rule from the note: read the exception name like a sentence, then go down to the first "at" line that names your file. Use it the next time a program of yours stops with red text.' },
+      { label: 'The fast track', text: 'On track: lessons 8 to 10 with no hints. Lessons 11 (methods, your first functions) and 12 (the shop challenge) are next. Then the rematch, on a later day than lesson 12, decides whether week 2 runs at two lessons a night.' },
+      { label: 'Before you sleep', text: 'Write one line in journal.md: what you did and one thing that confused you. It takes a minute and it is how the tutor knows what to explain next. And try to stop by 1 am on lesson nights: memory of what you practised is laid down while you sleep, so late nights cost you some of what you learned that night.' },
+    ],
+  },
   week: {
     title: 'Week 1: 12 to 18 October',
     goal: 'Finish the Arena in one go: the monster hits back, dice decide, you choose the moves, and the moves get names (methods, Java\'s word for functions). Then prove it with a rematch on a later day. On breaks, payments notes 2, 3 and 4. The days below are the latest, not a waiting line.',
   },
   targets: [
     {
-      by: 'Tonight, Thursday 15',
+      by: 'Done, Thursday 15',
       items: [
         { text: 'Lesson 8: The monster hits back (two conditions)', missions: ['w1m8'] },
         { text: 'Lesson 9: Roll the dice (random numbers)', missions: ['w1m9'] },
         { text: 'Lesson 10: Your move (reading what the player types)', missions: ['w1m10'] },
+      ],
+    },
+    {
+      by: 'Next lab night',
+      items: [
         { text: 'Lesson 11: Give the moves names (methods, which other languages call functions)', missions: ['w1m11'] },
         { text: 'Lesson 12: the second timed challenge, the shop. Use the five steps from "How to read a problem" first.', missions: ['w1m12'] },
       ],
