@@ -228,6 +228,7 @@
   .apb.ap-data { border-color: var(--accent); }
   .apb.sel { background: var(--panel); outline: 2px solid var(--text); }
   .apdu .wrow button { font-size: 13.5px; padding: 6px 10px; }
+  .later { display: inline-block; margin-top: 4px; font-size: 12.5px; font-weight: 600; padding: 1px 9px; border-radius: 99px; border: 1px dashed var(--blue); color: var(--blue); }
   .ladder .lrow { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--line); }
   .ladder .lstate { font: 600 10.5px var(--mono, Consolas, monospace); letter-spacing: .5px; text-transform: uppercase; text-align: center; border-radius: 99px; padding: 2px 0; border: 1px solid var(--line); color: var(--dim); }
   .ladder .lstate.done { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
@@ -557,6 +558,7 @@
     line.append(el('span', '', 'dice.nextInt('), n, el('span', '', ') +'), k);
     const out = el('div');
     function draw() {
+      if (st.bad) { out.innerHTML = '<div class="bitmsg">' + st.bad + '</div>'; return; }
       const lo = st.k, hi = st.k + st.n - 1;
       let html = '<div class="bitinfo">Smallest <b>' + lo + '</b>, largest <b>' + hi + '</b></div><div class="muted">' + st.n + ' different values, each equally likely. nextInt(' + st.n + ') alone gives 0 to ' + (st.n - 1) + '.</div>';
       const most = Math.max(1, ...Object.values(st.counts));
@@ -571,11 +573,16 @@
     }
     function reset() { st.counts = {}; st.last = null; st.total = 0; }
     function setup() {
-      st.n = Math.max(1, Math.min(40, Math.trunc(Number(n.value) || 1)));
+      // Never change his number silently: a bound the diagram cannot draw gets a message instead.
+      const want = Math.trunc(Number(n.value));
+      st.bad = !(want >= 1) ? 'Java would stop here with an error: <code>IllegalArgumentException: bound must be positive</code>. nextInt needs at least 1 value to choose from.'
+        : want > 100 ? 'Java accepts nextInt(' + want + ') and gives 0 to ' + (want - 1) + ', plus whatever you add. This diagram only draws up to 100 bars, so try 100 or fewer here.' : '';
+      st.n = st.bad ? st.n : want;
       st.k = Math.max(-999, Math.min(999, Math.trunc(Number(k.value) || 0)));
       reset(); draw();
     }
     function roll(times) {
+      if (st.bad) return;
       for (let t = 0; t < times; t++) { st.last = Math.floor(Math.random() * st.n) + st.k; st.counts[st.last] = (st.counts[st.last] || 0) + 1; st.total++; }
       draw();
     }

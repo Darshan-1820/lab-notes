@@ -603,6 +603,33 @@ heroHp <= 0 || monsterHp <= 0</pre>
 Random dice = new Random();           // make one dice, once
 int damage = dice.nextInt(21) + 10;   // roll it: 10 to 30</pre>
 
+<h3>Every piece of the two lines</h3>
+<p>Here is what each word does. Some of it is only the outline for now; those parts are marked, and they are taught properly in the lesson named on the mark.</p>
+<pre>Random dice = new Random();
+int damage = dice.nextInt(21) + 10;</pre>
+<div class="tablewrap"><table class="plain">
+<tr><th>Piece</th><th>What it means</th></tr>
+<tr><td><code>Random</code> (first word)</td><td>The <b>type</b> of the box, like <code>int</code> in <code>int heroHp</code>. An <code>int</code> box holds a whole number; a <code>Random</code> box holds a dice machine. <code>Random</code> is a <b>class</b>: a blueprint for a kind of thing, written by the people who made Java and kept in <code>java.util</code>, which is why the file needs the import line. <span class="later">Coming in weeks 4 to 5: what a class is, by writing your own (Hero and Monster)</span></td></tr>
+<tr><td><code>dice</code></td><td>The name of the box. Your choice: <code>roller</code> or <code>d</code> would work the same.</td></tr>
+<tr><td><code>new Random()</code></td><td><code>new</code> builds one real dice machine from the blueprint, in memory. A thing built from a class is called an <b>object</b>. The empty brackets mean "no settings"; <code>new Random(7)</code> passes one setting, the seed (see below). <span class="later">Coming in weeks 4 to 5: what new does in memory, and constructors</span></td></tr>
+<tr><td><code>dice.</code></td><td>The dot means "ask this object to do something". You are talking to the machine in the box called <code>dice</code>, the same way <code>System.out.println</code> asks <code>System.out</code> to print.</td></tr>
+<tr><td><code>nextInt</code></td><td>The name of the action you ask for. An action that belongs to an object is a <b>method</b>. The name says what it does: give me the <b>next int</b> (whole number) from your sequence of random numbers. <span class="later">Coming in lesson 11: writing your own methods</span></td></tr>
+<tr><td><code>(21)</code></td><td>The value you hand to the method, called an <b>argument</b>. For <code>nextInt</code> it means "how many different numbers may come out". With 21 you get one of 0, 1, 2 ... 20. It starts at 0 and never reaches 21.</td></tr>
+<tr><td><code>+ 10</code></td><td>Ordinary adding. It slides 0 to 20 up to 10 to 30.</td></tr>
+<tr><td>the whole <code>dice.nextInt(21)</code></td><td>Java runs the method and puts its answer where the call was, the way <code>3 + 4</code> is replaced by 7. If the machine produced 5, the line becomes <code>int damage = 5 + 10;</code>. That answer is called the <b>return value</b>. <span class="later">Coming in lesson 11 and week 2: methods that return values</span></td></tr>
+</table></div>
+<p><b>Why 21?</b> The game wants damage from 10 to 30. Count them: 10, 11, ... 30 is 30 - 10 + 1 = <b>21</b> numbers. <code>nextInt</code> only knows how to give "one of n numbers, starting at 0", so you ask for 21 of them and then add 10.</p>
+<p><b>Why <code>nextInt</code> and not something else?</b> A Random object has several methods, one per kind of answer:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Call</th><th>Gives</th></tr>
+<tr><td><code>dice.nextInt(21)</code></td><td>a whole number from 0 to 20</td></tr>
+<tr><td><code>dice.nextInt(10, 31)</code></td><td>a whole number from 10 to 30 directly (the second number is still left out). This form exists from Java 17, which is what you have. The lesson uses the other one because almost all Java code you will read does.</td></tr>
+<tr><td><code>dice.nextBoolean()</code></td><td><code>true</code> or <code>false</code>, like a coin</td></tr>
+<tr><td><code>dice.nextDouble()</code></td><td>a decimal from 0.0 up to, but not including, 1.0</td></tr>
+</table></div>
+<p>Damage is a whole number, so <code>nextInt</code> is the one that fits.</p>
+<p><b>What "random" means here.</b> Random means you cannot know the result before it happens, like a real dice. A computer cannot do that: it only follows instructions. So the dice machine keeps one big secret number inside it (the seed). Every call to <code>nextInt</code> pushes that number through a fixed scrambling formula, keeps the new number for next time, and gives you a piece of it, cut down with the remainder <code>%</code> to the size you asked for. That is the last section of this note, "Why it is called pseudo-random".</p>
+
 <h3>The recipe for a range</h3>
 <p><code>nextInt(n)</code> gives one of n numbers and starts at zero: 0 up to n - 1. It never gives n itself.</p>
 <div class="tablewrap"><table class="plain">
@@ -700,6 +727,17 @@ int move = keys.nextInt();                // wait for a whole number</pre>
 
 <h3>Never trust input</h3>
 <p>Everything that comes from outside can be wrong: a letter where a number should be, a move that does not exist, a negative price. Decide what your program does in each case. An <code>else</code> that says "Not a move." is the simplest form of this. A large share of real security problems start with input that nobody checked.</p>
+
+<h3>Every piece of the Scanner line</h3>
+<pre>Scanner keys = new Scanner(System.in);
+int move = keys.nextInt();</pre>
+<div class="tablewrap"><table class="plain">
+<tr><th>Piece</th><th>What it means</th></tr>
+<tr><td><code>Scanner</code></td><td>The type of the box: a reader that turns typed characters into values. A class from <code>java.util</code>, like <code>Random</code>. <span class="later">Coming in weeks 4 to 5: classes</span></td></tr>
+<tr><td><code>keys</code></td><td>The name of the box. Your choice.</td></tr>
+<tr><td><code>new Scanner(System.in)</code></td><td>Build one reader. The argument says what to read from: <code>System.in</code> is the keyboard (the program's input), the partner of <code>System.out</code>, the screen. <span class="later">Coming in weeks 4 to 5: objects and constructors</span></td></tr>
+<tr><td><code>keys.nextInt()</code></td><td>Ask the reader for the next whole number that was typed. Empty brackets: it needs no extra information. It waits until something is typed, and its return value is the number. Same idea as <code>dice.nextInt(21)</code>: an object, a dot, a method. <span class="later">Coming in lesson 11: methods</span></td></tr>
+</table></div>
 
 <h3>Common mistakes</h3>
 <div class="tablewrap"><table class="plain">
@@ -1168,6 +1206,32 @@ int move = keys.nextInt();                // wait for a whole number</pre>
   },
 
   // ======================= questions he asked =======================
+  {
+    id: 'dice-max-50',
+    date: '2026-10-15',
+    title: 'nextInt(50) + 1: is the largest 40 or 50?',
+    from: 'Week 1, lesson 9: Roll the dice',
+    asked: 'When I changed the values to 50 and 1, dice.nextInt(50) + 1, it says the smallest is 1, which is correct, since nextInt will give 0 and 0 + 1 will be 1. But the largest it says is 40, which I am confused about. It cannot give 50, but it can give 49, and 49 + 1 is 50. So the max should be 50, right?',
+    html: `
+<h3>You were right. The diagram was wrong.</h3>
+<p>Your reasoning is exactly correct:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Step</th><th>Smallest</th><th>Largest</th></tr>
+<tr><td><code>dice.nextInt(50)</code></td><td>0</td><td>49 (it never gives 50 itself)</td></tr>
+<tr><td><code>+ 1</code></td><td>0 + 1 = <b>1</b></td><td>49 + 1 = <b>50</b></td></tr>
+</table></div>
+<p>So <code>dice.nextInt(50) + 1</code> gives 1 to 50: 50 different numbers.</p>
+
+<h3>What went wrong in the diagram</h3>
+<p>The diagram draws one bar per possible number. Whoever built it (your tutor) limited it to 40 bars so they would fit on a phone, and wrote it so that any bigger number was quietly changed to 40. You typed 50; the diagram used 40 without telling you, and 40 values starting at 1 end at 40.</p>
+<p>That is a real kind of bug: a program that <b>silently changes your input</b>. It is worse than an error message, because nothing tells you anything happened. It is fixed: the diagram now draws up to 100 bars, and for anything it cannot draw it says so instead of changing your number. Try 50 and 1 again.</p>
+<div data-widget="dice" data-key="q-dice-50" data-n="50" data-k="1"></div>
+
+<h3>The habit you just used</h3>
+<p>You did not trust the screen. You worked it out from the rule (nextInt(n) gives 0 to n - 1), got a different answer, and asked. That is how real bugs are found, at work too: when a tool and your own careful reasoning disagree, check both, and say so.</p>
+<p><b>Prove it in Java yourself (optional).</b> In <code>play/Scratch.java</code>, roll <code>dice.nextInt(50) + 1</code> 100,000 times in a <code>while</code> loop and keep the largest and smallest roll seen so far in two boxes. Print both at the end. Predict the two numbers first. You have every tool for this already: Random, while, if, and a box that remembers a running value.</p>
+<div data-widget="run" data-file="Scratch.java"></div>`,
+  },
   {
     id: 'bits-bytes-everything',
     date: '2026-10-12',
