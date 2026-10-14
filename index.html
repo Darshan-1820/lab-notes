@@ -81,14 +81,20 @@
 <div class="page" id="app"></div>
 
 <script src="week1-game.js"></script>
+<script src="week2-money.js"></script>
 <script src="notes.js"></script>
+<script src="notes-week2.js"></script>
 <script src="plan.js"></script>
 <script src="math-data.js"></script>
 <script src="widgets.js"></script>
+<script src="widgets-week2.js"></script>
 <script src="math.js"></script>
 <script>
 (function () {
-  const WEEK = window.WEEK, NOTES = window.NOTES || [], app = document.getElementById('app');
+  const WEEKS = window.WEEKS || [window.WEEK], NOTES = window.NOTES || [], app = document.getElementById('app');
+  const ALL = [].concat(...WEEKS.map(w => w.missions)), weekOf = m => WEEKS.find(w => w.missions.includes(m));
+  // "Goes with lesson 3", or "Goes with Week 2, lesson 3" once there is more than one week.
+  const lessonLabel = (id, i) => { const m = ALL.find(x => x.id === id); if (!m) return 'Goes with lesson ' + (i + 1); const w = weekOf(m); return 'Goes with ' + (WEEKS.length > 1 ? w.title.split(':')[0] + ', ' : '') + 'lesson ' + (w.missions.indexOf(m) + 1); };
   const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   const clean = s => s.replace(/\r/g, '').split('\n').map(l => l.trimEnd()).filter(l => l.trim() !== '');
@@ -100,7 +106,7 @@
   const MATHS = (window.MATH ? window.MATH.modules : []).slice().sort((a, b) => a.order - b.order);
   const MARKS = Lab.marks;
   const PKEY = 'lab-marks-pending';
-  const titleOf = id => { const m = WEEK.missions.find(x => x.id === id); if (m) return 'Lesson: ' + m.title; const n = NOTES.find(x => x.id === id); if (n) return n.title; const mm = MATHS.find(x => x.id === id); return mm ? 'Maths: ' + mm.title : id; };
+  const titleOf = id => { const m = ALL.find(x => x.id === id); if (m) return 'Lesson: ' + m.title; const n = NOTES.find(x => x.id === id); if (n) return n.title; const mm = MATHS.find(x => x.id === id); return mm ? 'Maths: ' + mm.title : id; };
   const mem = {};
   function sget(k) { try { const v = sessionStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return mem[k] || null; } }
   function sset(k, v) { mem[k] = v; try { if (v) sessionStorage.setItem(k, JSON.stringify(v)); else sessionStorage.removeItem(k); } catch (e) { /* kept in memory for this visit */ } }
@@ -191,13 +197,15 @@
       app.append(box);
     }
     app.append(marksCard());
-    app.append(el('h2', 'section', esc(WEEK.title)));
-    const lessons = el('nav', 'list'); lessons.setAttribute('aria-label', 'Lessons');
-    WEEK.missions.forEach((m, i) => {
-      const a = el('a', '', '<span class="n">' + (i + 1) + '</span><span><b>' + esc(m.title) + '</b><span class="s">' + esc(m.skill) + '</span></span>' + readTick(m.id));
-      a.href = '#' + m.id; lessons.append(a);
+    WEEKS.forEach(w => {
+      app.append(el('h2', 'section', esc(w.title)));
+      const lessons = el('nav', 'list'); lessons.setAttribute('aria-label', 'Lessons: ' + w.title);
+      w.missions.forEach((m, i) => {
+        const a = el('a', '', '<span class="n">' + (i + 1) + '</span><span><b>' + esc(m.title) + '</b><span class="s">' + esc(m.skill) + '</span></span>' + readTick(m.id));
+        a.href = '#' + m.id; lessons.append(a);
+      });
+      app.append(lessons);
     });
-    app.append(lessons);
     if (MATHS.length) {
       app.append(el('h2', 'section', 'Maths: practise on a break'));
       const nav = el('nav', 'list'); nav.setAttribute('aria-label', 'Maths');
@@ -213,7 +221,7 @@
       app.append(el('h2', 'section', title));
       const nav = el('nav', 'list'); nav.setAttribute('aria-label', title);
       items.forEach((n, i) => {
-        const a = el('a', '', (numbered ? '<span class="n">' + (i + 1) + '</span>' : '') + '<span><b>' + esc(n.title) + '</b><span class="s">' + esc(numbered ? numbered + (i + 1) : n.date) + '</span></span>' + readTick(n.id));
+        const a = el('a', '', (numbered ? '<span class="n">' + (i + 1) + '</span>' : '') + '<span><b>' + esc(n.title) + '</b><span class="s">' + esc(numbered ? (n.kind === 'concept' && n.lesson ? lessonLabel(n.lesson, i) : numbered + (i + 1)) : n.date) + '</span></span>' + readTick(n.id));
         a.href = '#' + n.id; nav.append(a);
       });
       if (!items.length) nav.append(el('div', 'card', 'Nothing here yet.'));
@@ -254,11 +262,11 @@
   }
 
   function lesson(m) {
-    const idx = WEEK.missions.indexOf(m);
+    const wk = weekOf(m), idx = wk.missions.indexOf(m), at = ALL.indexOf(m);
     app.innerHTML = '';
-    app.append(bar(WEEK.missions[idx - 1], WEEK.missions[idx + 1]));
+    app.append(bar(ALL[at - 1], ALL[at + 1]));
     const top = el('header');
-    top.append(el('div', 'kicker', 'Lesson ' + (idx + 1) + ' of ' + WEEK.missions.length + ' · ' + esc(m.skill)), el('h1', '', esc(m.title)));
+    top.append(el('div', 'kicker', (WEEKS.length > 1 ? esc(wk.title.split(':')[0]) + ' · ' : '') + 'Lesson ' + (idx + 1) + ' of ' + wk.missions.length + ' · ' + esc(m.skill)), el('h1', '', esc(m.title)));
     app.append(top);
     const body = el('div', 'stack');
     m.blocks.forEach((b, i) => {
@@ -281,7 +289,7 @@
     const tools = el('div', 'card'); tools.append(MARKS.pageTools(m.id, m.title)); body.append(tools);
     app.append(body);
     Lab.hydrate(body, {});
-    app.append(bar(WEEK.missions[idx - 1], WEEK.missions[idx + 1]));
+    app.append(bar(ALL[at - 1], ALL[at + 1]));
   }
 
   function note(n) {
@@ -313,7 +321,7 @@
 
   function route() {
     const id = location.hash.slice(1);
-    const m = WEEK.missions.find(x => x.id === id), n = NOTES.find(x => x.id === id), mm = MATHS.find(x => x.id === id);
+    const m = ALL.find(x => x.id === id), n = NOTES.find(x => x.id === id), mm = MATHS.find(x => x.id === id);
     if (id === 'plan' && PLAN) plan(); else if (id === 'marks') marksPage(); else if (m) lesson(m); else if (n) note(n); else if (mm) maths(mm); else home();
     window.scrollTo(0, 0);
   }

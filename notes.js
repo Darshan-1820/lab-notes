@@ -982,13 +982,189 @@ int move = keys.nextInt();                // wait for a whole number</pre>
 <tr><td>How is a PIN kept secret on its way to the bank?</td><td>Payments note 6</td></tr>
 <tr><td>What is in the end-of-day files, and who pays whom?</td><td>Payments note 7</td></tr>
 </table></div>
-<p>Those notes are not written yet. They come one at a time as you finish the one before.</p>
+<p>Notes 3 and 4 are written (you asked for more payments on 15 October). Notes 5 to 7 come one at a time after those.</p>
 
 <h3>Check yourself</h3>
 <details><summary>Your card is from Kotak Mahindra Bank. You pay at a shop that banks with ICICI Bank. Who is the issuer and who is the acquirer?</summary><p>Kotak Mahindra Bank is the issuer, the card's bank. ICICI Bank is the acquirer, the shop's bank.</p></details>
 <details><summary>Who decides which network a request goes through, and what do they look at?</summary><p>The shop's bank. It looks at the first digits of the card number.</p></details>
 <details><summary>What is the BIN, and how long is it?</summary><p>The first digits of the card number, which identify the bank that gave out the card. 6 digits on older ranges, 8 on newer ones.</p></details>
 <details><summary>A card number passes the Luhn check. Does that prove the card is real?</summary><p>No. It only shows the digits are consistent with each other. Anyone can make up a number that passes. Proving the card is real needs the chip's one-time code, which is note 5.</p></details>`,
+  },
+
+  {
+    id: 'pay-the-message',
+    kind: 'payments', order: 3,
+    date: '2026-10-15',
+    title: 'What the request carries, and in what format',
+    from: 'Payments note 3',
+    html: `
+<h3>The idea</h3>
+<p>Notes 1 and 2 drew the request as a speech bubble: "May I charge 250?". This note opens the bubble. The real thing is a short message in a format called <b>ISO 8583</b>, and almost every card payment in the world, at a shop or an ATM, travels as one of these between the shop's bank, the network and the card's bank.</p>
+<p>You already know everything you need to read one: digits, bytes, hex, and switches that mean "yes" or "no". This note is where those meet money.</p>
+
+<h3>Why such an odd format</h3>
+<p>ISO 8583 was designed when networks were slow and every byte cost money. The version most networks still build on is from <b>1987</b>. So the message has no labels and no spaces. Where a modern system would send <code>"amount": 250.00</code>, ISO 8583 sends 12 digits at a known position and both sides agree what they mean. Short, fast, and unreadable without the rule book. Each network (Visa, Mastercard, RuPay) publishes its own rule book on top of the standard, so their messages differ in details. This note shows the shape they share.</p>
+<p>A message has three parts, always in this order:</p>
+<ol>
+<li><b>Message type</b>: 4 digits that say what kind of message this is.</li>
+<li><b>Bitmap</b>: 64 switches that say which fields are present.</li>
+<li><b>The fields</b>: only the ones the bitmap switched on, in number order.</li>
+</ol>
+
+<h3>Open a real-shaped message</h3>
+<p><b>Try it.</b> This is a ₹250 contactless payment, the one from note 1. Tap the lit switches in the bitmap, or tap the rows, and read what each field carries. Then switch to the answer.</p>
+<div data-widget="iso8583" data-key="pay3-msg"></div>
+<p>The card number, terminal and shop are made up. The card number is a well-known test number that passes the Luhn check.</p>
+
+<h3>The bitmap is just switches</h3>
+<p>This is the part that uses your bits and bytes. There are 128 possible fields, but a message carries only the 10 to 20 it needs. Instead of labelling each one, the message starts with 64 switches: switch 2 on means "field 2 is here", switch 3 off means "field 3 is not". Eight switches make a byte, so the 64 switches are 8 bytes, and written in hex that is 16 characters.</p>
+<p>Look at the first row of the bitmap in the diagram: switches 2, 3, 4 and 7 are on. As a pattern that is <code>0111 0010</code>. The left half is 7, the right half is 2, so the byte is hex <b>72</b>. If you can read that row, you can read any bitmap.</p>
+<p>Switch 1 is special. When it is on, a <b>second</b> bitmap follows for fields 65 to 128. Our message needs none of those, so switch 1 is off.</p>
+
+<h3>Lengths: fixed or told</h3>
+<p>Because there are no labels, the reader must know where each field ends. Two ways:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Kind</th><th>How the reader knows the length</th><th>Example</th></tr>
+<tr><td>Fixed</td><td>The rule book says so. Field 4 is always 12 digits, so a small amount is padded with zeros.</td><td><code>000000025000</code></td></tr>
+<tr><td>LLVAR</td><td>The first two digits give the length, then the value follows</td><td>Field 2: <code>16</code> then <code>4111111111111111</code></td></tr>
+<tr><td>LLLVAR</td><td>The same with three digits of length, for longer fields</td><td>Field 55, the chip data</td></tr>
+</table></div>
+<p>The format codes you saw in the diagram: <b>n</b> digits only, <b>an</b> letters and digits, <b>ans</b> letters, digits and special characters, <b>b</b> raw bytes. "n12" means exactly 12 digits; "n..19" means up to 19.</p>
+
+<h3>The amount has no decimal point</h3>
+<p>Field 4 is the answer to your question about decimals. ₹250.00 travels as <code>000000025000</code>: twenty-five thousand <b>paise</b>, a whole number. Field 49, the currency, says which smallest unit the number is counted in. 356 is the rupee, which has 2 digits after the point, so the last two digits are paise. The Japanese yen has none, so a yen amount has no "paise" digits at all. Nothing in the message is ever a <code>double</code>.</p>
+
+<h3>The answer</h3>
+<p>The card's bank answers with message type <b>0110</b>. It copies the fields that identify the question (most importantly the trace number in field 11, so the shop's bank can match question to answer) and adds two of its own: field 38, the approval code, and field 39, the <b>response code</b>.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Field 39</th><th>Means</th></tr>
+<tr><td><code>00</code></td><td>Approved</td></tr>
+<tr><td><code>05</code></td><td>Do not honour: a "no" without a reason</td></tr>
+<tr><td><code>14</code></td><td>No such card number</td></tr>
+<tr><td><code>51</code></td><td>Not enough money</td></tr>
+<tr><td><code>54</code></td><td>The card has expired</td></tr>
+<tr><td><code>55</code></td><td>Wrong PIN</td></tr>
+<tr><td><code>91</code></td><td>The card's bank could not be reached</td></tr>
+</table></div>
+<p>When a terminal shows "Declined", it is one of these two-character codes, turned into words.</p>
+
+<h3>Other message types you will meet</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Type</th><th>What it is</th></tr>
+<tr><td>0100 / 0110</td><td>Authorisation: "may I?" and the answer. The money does not move yet.</td></tr>
+<tr><td>0200 / 0210</td><td>A financial message: the money is meant to move. ATMs use these.</td></tr>
+<tr><td>0400 / 0410</td><td>Reversal: "cancel that one". Sent when, for example, the answer never arrived and the terminal gave up.</td></tr>
+<tr><td>0800 / 0810</td><td>Network check: "are you still there?", with no customer involved</td></tr>
+</table></div>
+<p>The moving of money at the end of the day happens in files, not in these messages. That is note 7.</p>
+
+<h3>What is not in the message</h3>
+<ul>
+<li><b>The PIN in plain digits.</b> When a PIN is needed, it travels encrypted in a field of its own. Note 6.</li>
+<li><b>The CVV from the back of the card.</b> A chip payment does not use it. It exists for typing card details into websites.</li>
+<li><b>Your name.</b> The bank does not need it to decide, so a normal tap does not send it.</li>
+</ul>
+<p>Field 55 is the chip's part of the conversation, and its cryptogram is what makes the payment hard to fake. Where field 55 comes from is note 4. How the cryptogram is computed and checked is note 5.</p>
+
+<h3>Where this is used in code</h3>
+<p>Java has a well-known open-source library for exactly this, <b>jPOS</b>, which builds and reads ISO 8583 messages. It is on your roadmap as a possible open-source project. Later on, writing a small reader for the bitmap is a good exercise for your arrays and bytes lessons.</p>
+
+<h3>Words to keep</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Word</th><th>Meaning</th></tr>
+<tr><td>ISO 8583</td><td>The message format used between banks and networks for card payments</td></tr>
+<tr><td>MTI</td><td>Message type indicator: the 4 digits at the front, such as 0100</td></tr>
+<tr><td>Bitmap</td><td>64 switches saying which fields are present</td></tr>
+<tr><td>Data element (DE)</td><td>A numbered field. "DE 4" is the amount.</td></tr>
+<tr><td>STAN</td><td>Trace number, field 11: matches an answer to its question</td></tr>
+<tr><td>RRN</td><td>Reference number, field 37: follows the payment through refunds and disputes</td></tr>
+<tr><td>Response code</td><td>Field 39: 00 approved, anything else a refusal</td></tr>
+<tr><td>Minor units</td><td>The smallest unit of a currency, such as paise. Amounts travel as whole numbers of these.</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>A bitmap's first byte is hex 72. Which of fields 1 to 8 are present?</summary><p>72 is 0111 0010. Reading the switches left to right as fields 1 to 8: 2, 3, 4 and 7 are on. Field 1 is off, so there is no second bitmap.</p></details>
+<details><summary>Field 4 says 000000150075 and field 49 says 356. How much is the payment?</summary><p>150075 paise, which is ₹1,500.75.</p></details>
+<details><summary>The answer to a payment comes back with field 39 = 51. What happened?</summary><p>Refused: not enough money in the account (or over the credit limit).</p></details>
+<details><summary>The shop's bank has sent thousands of questions and answers arrive in any order. How does it know which question an answer belongs to?</summary><p>By the trace number, field 11 (together with the terminal and the time). The answer copies it from the question.</p></details>
+<details><summary>Why does field 2 have a length in front of it, but field 4 does not?</summary><p>Card numbers can have different lengths, so the reader has to be told. The amount is always exactly 12 digits, so its length is in the rule book.</p></details>`,
+  },
+  {
+    id: 'pay-the-tap',
+    kind: 'payments', order: 4,
+    date: '2026-10-15',
+    title: 'The tap: what the card and the terminal say to each other',
+    from: 'Payments note 4',
+    widgets: {
+      'pay4-tap': {
+        parties: [
+          { short: 'Card', name: 'The card' },
+          { short: 'Terminal', name: 'The terminal' },
+          { short: "Shop's bank", name: "The shop's bank" },
+        ],
+        steps: [
+          { from: 1, to: 1, msg: 'field on', title: 'The terminal makes a field', note: 'The terminal\'s antenna sends out a radio field at 13.56 MHz all the time, waiting. It reaches only a few centimetres.' },
+          { from: 1, to: 0, msg: 'power', title: 'The card wakes up', note: 'The card has no battery. A loop of wire around the edge of the card picks up energy from the field, enough to run the chip for a moment. Bring the card close and the chip switches on.' },
+          { from: 1, to: 0, msg: 'SELECT 2PAY.SYS.DDF01', title: '"Which payment apps do you have?"', note: 'The first command. The terminal asks for the list of payment apps by a name every contactless card knows.' },
+          { from: 0, to: 1, msg: 'Visa A0000000031010', title: 'The card lists its apps', note: 'Each app has an ID called an AID. Most cards have one; some have two, for example a network\'s own app and a domestic one.' },
+          { from: 1, to: 0, msg: 'SELECT A0000000031010', title: 'The terminal picks one', note: 'It chooses an app both sides support and selects it. The card answers with a list of what it needs to know before it can start, called the PDOL.' },
+          { from: 1, to: 0, msg: 'GPO: 250.00, INR, random', title: 'The terminal answers the card\'s list', note: 'GET PROCESSING OPTIONS carries what the card asked for: the amount, the currency, today\'s date, and a random number made fresh for this tap.' },
+          { from: 0, to: 1, msg: 'records + cryptogram', title: 'The card does its work', note: 'The card says which records the terminal should read. Many contactless cards also compute the cryptogram right here, to save time. On others, it comes after the records, with GENERATE AC.' },
+          { from: 1, to: 0, msg: 'READ RECORD', title: 'The terminal reads the card data', note: 'Card number, expiry date, and certificates the terminal uses to check the card is genuine. Then the card can go: the whole conversation usually takes well under half a second, which is why you hear the beep so fast.' },
+          { from: 1, to: 2, msg: '0100 + field 55', title: 'Off to the bank', note: 'The terminal builds the message from note 3. The card\'s answers become field 55. The cryptogram goes with it, so the card\'s bank can check it was made by the real chip.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>Note 1 said "you tap, the terminal reads the chip". This note shows what that reading is. The chip is a tiny computer. The terminal sends it <b>commands</b>, the chip answers each one, and the two take turns until the terminal has what it needs for the message in note 3. The rules for this conversation are a standard called <b>EMV</b>, written by the card networks together.</p>
+
+<h3>Where the power comes from</h3>
+<p>A contactless card has no battery. Around its edge, inside the plastic, is a loop of wire, an antenna. The terminal sends out a radio field at 13.56 MHz. When the card comes within a few centimetres, the field makes a small current flow in the loop, and that powers the chip. Move the card away and the chip switches off mid-sentence. That is why the terminal asks you to hold the card still until it beeps.</p>
+<p>The short range is on purpose: a card in your pocket a metre away cannot be read by mistake.</p>
+
+<h3>The conversation, step by step</h3>
+<p><b>Try it.</b> Press Next step and follow the bubble.</p>
+<div data-widget="flow" data-ref="pay4-tap"></div>
+
+<h3>A command is a few bytes</h3>
+<p>Each command the terminal sends is a short row of bytes called an <b>APDU</b> (application protocol data unit). The first four bytes are always the same four parts, then comes data if the command needs any. <b>Try it.</b> Pick a command and tap its bytes.</p>
+<div data-widget="apdu" data-key="pay4-apdu"></div>
+<p>Look at the first command. Its data is the name <code>2PAY.SYS.DDF01</code> sent as text bytes, using the same numbers for letters you saw in the bits and bytes note: hex 50 is 80, the letter P. Everything in this conversation is bytes, written in hex.</p>
+
+<h3>Answers come as tag, length, value</h3>
+<p>The card's answers are not fixed positions like ISO 8583. They are a list of small packets, each made of:</p>
+<ol>
+<li>a <b>tag</b>: one or two bytes saying what this is, for example <code>9F02</code> for the amount;</li>
+<li>a <b>length</b>: one byte saying how many bytes the value has;</li>
+<li>the <b>value</b>.</li>
+</ol>
+<p>This is called <b>TLV</b>. You have seen it already: field 55 in note 3 is a TLV list, <code>9F02 06 000000025000</code> meaning "amount, 6 bytes, 250.00". The terminal copies the important packets from the card's answers into field 55, and that is how the chip's words reach the card's bank.</p>
+<p>Why the tag decides how long it is: if the low five switches of the first byte are all on (hex <code>1F</code>), the tag continues into a second byte. <code>9F</code> is <code>1001 1111</code>, so <code>9F02</code> is a two-byte tag. <code>95</code> is <code>1001 0101</code>, so it is a one-byte tag.</p>
+
+<h3>The random number is the clever part</h3>
+<p>Remember the random number the terminal sent in GET PROCESSING OPTIONS. The card mixes it, with the amount and its own tap counter, into the cryptogram. So the cryptogram from one tap is useless for any other: a copy recorded today will not match tomorrow's random number. This is why a stolen chip conversation cannot be replayed, while a magnetic stripe, which says the same thing every time, could be copied. How the chip makes the cryptogram, and how the bank checks it without ever seeing the chip's secret key, is note 5.</p>
+
+<h3>Words to keep</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Word</th><th>Meaning</th></tr>
+<tr><td>EMV</td><td>The standard for how chip cards and terminals talk. Named after Europay, Mastercard and Visa, who started it.</td></tr>
+<tr><td>NFC</td><td>The short-range radio used for contactless, at 13.56 MHz</td></tr>
+<tr><td>APDU</td><td>One command or one answer in the conversation</td></tr>
+<tr><td>AID</td><td>The ID of a payment app on the card, such as A0000000031010 for Visa</td></tr>
+<tr><td>PPSE</td><td>The list of payment apps, asked for by the name 2PAY.SYS.DDF01</td></tr>
+<tr><td>PDOL</td><td>The card's list of things it needs to know before it starts</td></tr>
+<tr><td>TLV</td><td>Tag, length, value: how the card packs its answers</td></tr>
+<tr><td>Status word</td><td>The last two bytes of every answer. 90 00 means done.</td></tr>
+<tr><td>Cryptogram</td><td>A one-time code from the chip, proving it is genuine. Note 5.</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>Where does a contactless card get its power?</summary><p>From the terminal's radio field. Its antenna picks up the energy, enough to run the chip while it is close.</p></details>
+<details><summary>Why does every tap need a fresh random number from the terminal?</summary><p>The card mixes it into the cryptogram, so each tap's cryptogram is different and a recorded one cannot be reused.</p></details>
+<details><summary>An answer from the card ends in 6A 82. What does that mean?</summary><p>"Not found": the card has no app or file by that name. 90 00 would have meant success.</p></details>
+<details><summary>Split this TLV packet: 5F2A 02 0356.</summary><p>Tag 5F2A (the currency), length 2 bytes, value 0356: the Indian rupee, code 356.</p></details>
+<details><summary>How do the chip's answers end up at the card's bank?</summary><p>The terminal copies them into field 55 of the ISO 8583 message, as a TLV list.</p></details>`,
   },
 
   // ======================= questions he asked =======================
@@ -1000,11 +1176,47 @@ int move = keys.nextInt();                // wait for a whole number</pre>
     asked: 'So these are bits and bytes? How exactly is an int or a number stored in this memory? How are strings, decimals, images and other stuff stored in memory?',
     html: `
 <h3>1. Bit and byte</h3>
-<p>Yes. One switch is a <b>bit</b>. Eight switches side by side are a <b>byte</b>. A byte has 256 possible patterns, so it can hold a number from 0 to 255.</p>
+<p>Yes. One switch is a <b>bit</b>. Eight switches side by side are a <b>byte</b>. A byte has 256 possible patterns, so it can hold a number from 0 to 255. The next three sections take that sentence apart slowly, because you marked it: why 256, what "41" means, and how a number can be a shade of grey.</p>
 <p><b>Try it.</b> These 8 switches start as the pattern for 65. Flip a few and watch all four readings change together.</p>
 <div data-widget="bits" data-key="note2-byte" data-bits="8" data-signed="false" data-meanings="true" data-start="65"></div>
 <p>This is the most important idea on the page: <b>the switches have no meaning of their own.</b> The same pattern is 65, or the letter A, or a shade of grey, depending on how the program reads it. A type such as <code>int</code> or <code>String</code> is an instruction to Java: read these switches this way.</p>
-<p>Hex is only a shorter way to write a byte: two characters in place of eight. The card data you see at work is written in hex, and every pair of characters there is one byte like this one.</p>
+
+<h3>1a. Why 8 switches make 256 patterns</h3>
+<p>Start small and count by hand.</p>
+<ul>
+<li><b>1 switch:</b> off or on. <code>0</code>, <code>1</code>. That is 2 patterns.</li>
+<li><b>2 switches:</b> the first can be off or on, and <i>for each of those</i> the second can be off or on. <code>00</code>, <code>01</code>, <code>10</code>, <code>11</code>. That is 2 × 2 = 4.</li>
+<li><b>3 switches:</b> take all 4 patterns of two switches. Put a 0 in front of each: 4 patterns. Put a 1 in front of each: 4 more. 4 + 4 = 8, which is 2 × 2 × 2.</li>
+</ul>
+<p>Every new switch does the same thing: the whole old list appears twice, once with the new switch off and once with it on. So every switch <b>doubles</b> the count: 2, 4, 8, 16, 32, 64, 128, <b>256</b>.</p>
+<p><b>Try it.</b> Start at 3 switches and add one at a time. Watch the list split into two halves that are the same apart from the first switch.</p>
+<div data-widget="patterns" data-key="note2-patterns" data-n="3"></div>
+<p><b>The maths has a name, and it is simpler than permutations.</b> It is the <b>multiplication rule</b> of counting: if one choice has <i>a</i> options and a second, separate choice has <i>b</i> options, the two together have <i>a × b</i> combined outcomes. Eight switches are eight separate choices of 2 options each:</p>
+<pre>2 × 2 × 2 × 2 × 2 × 2 × 2 × 2 = 2⁸ = 256</pre>
+<p>The same rule counts other things you know. A 4-digit PIN is four choices of 10 digits: 10 × 10 × 10 × 10 = 10,000 PINs. A 3-letter code from 26 letters: 26 × 26 × 26 = 17,576.</p>
+<p><b>Where permutations and combinations do come in.</b> They answer a different question. "How many patterns have <i>exactly 3</i> switches on?" means "in how many ways can I <i>choose</i> 3 of the 8 switches?". That is a combination, written C(8, 3), and it is 56. The bars in the diagram above are exactly these counts. For 8 switches they are 1, 8, 28, 56, 70, 56, 28, 8, 1, and they add up to 256, because every pattern has some number of switches on. You do not need combinations to understand a byte; the multiplication rule is enough. The maths track will reach them later.</p>
+<p><b>Why 0 to 255, and not 1 to 256?</b> One of the 256 patterns is all switches off, and that pattern means 0. 0 plus 255 more numbers is 256 numbers.</p>
+
+<h3>1b. Hex: two characters for one byte</h3>
+<p>Writing <code>01000001</code> every time is slow and easy to misread. So programmers write bytes in <b>hexadecimal</b>, "hex" for short: counting in sixteens instead of tens.</p>
+<p>Normal counting has 10 digits, 0 to 9. Hex needs 16 digits, so after 9 it borrows letters: <b>A</b> is 10, <b>B</b> 11, <b>C</b> 12, <b>D</b> 13, <b>E</b> 14, <b>F</b> 15.</p>
+<p>Here is the trick that makes hex fit bytes perfectly. Split the byte into two halves of 4 switches. 4 switches make 2 × 2 × 2 × 2 = <b>16</b> patterns, from 0 to 15, which is exactly one hex digit. So every byte is exactly two hex digits: one for the left half, one for the right half.</p>
+<p>Take 65:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th></th><th>Left half</th><th>Right half</th></tr>
+<tr><td>Switches</td><td><code>0100</code></td><td><code>0001</code></td></tr>
+<tr><td>Worth (8, 4, 2, 1)</td><td>4</td><td>1</td></tr>
+<tr><td>Hex digit</td><td><b>4</b></td><td><b>1</b></td></tr>
+</table></div>
+<p>So 65 is written <b>41</b> in hex. To turn it back: the left digit counts sixteens, the right digit counts ones. 4 × 16 + 1 = 65. It is the same idea as 65 in normal counting meaning 6 × 10 + 5, only with 16 in place of 10.</p>
+<p><b>Try it.</b> Make the byte for 255 (every switch on). Its hex is FF. Then make 10, then 16, and say the hex before you look.</p>
+<div data-widget="hexbyte" data-key="note2-hex" data-start="65"></div>
+<p>Hex looks like a normal number, so programs mark it. Java and many languages write <code>0x41</code>. Card data at work is written as one long run of hex with no marks at all, like <code>9F0206000000025000</code>. Split it into pairs, and each pair is one byte: <code>9F 02 06 00 00 00 02 50 00</code>. Payments notes 3 and 4 read exactly this kind of data.</p>
+
+<h3>1c. How a number can be a shade of grey</h3>
+<p>A screen makes every colour from three lights: red, green and blue. When all three are at the same brightness, you see grey. All three off is black; all three at full is white; anything between is a grey.</p>
+<p>So a program that wants a grey needs only <b>one</b> number, and uses it for all three lights. If it reads our byte as a grey, it sets red, green and blue to 65 each: a dark grey, about a quarter of the way from black to white. The byte did not change; the program chose to read it as a brightness. That is the meaning of "read as a shade of grey" in the diagram, and it is how black-and-white photos are stored: one byte per dot.</p>
+<p>Move the switches in the hex diagram above and watch the grey bar: the marker slides from black at 0 to white at 255.</p>
 
 <h3>2. Where an int lives</h3>
 <p>Memory is one very long row of cells. Each cell is one byte, and each cell has a number called its <b>address</b>, like house numbers on a street.</p>
@@ -1029,10 +1241,14 @@ int move = keys.nextInt();                // wait for a whole number</pre>
 <p>This is why systems that handle money do not store amounts as decimals. They store a whole number of the smallest unit: 250 rupees is stored as 25000 paise. Card payment messages carry amounts this way too.</p>
 
 <h3>5. Pictures</h3>
-<p>A picture is a grid of tiny dots called <b>pixels</b>. Each pixel is three numbers: how much red, how much green, how much blue, each from 0 to 255. That is one byte per colour, so <b>3 bytes per pixel</b>.</p>
-<p><b>Try it.</b> Mix a colour. Make white, then black, then yellow.</p>
+<p>Look at your phone screen through a magnifying glass, or a drop of water on the glass, and you see that it is not smooth. It is a grid of tiny dots, millions of them. One dot is called a <b>pixel</b>.</p>
+<p>Each pixel is really three tiny lights sitting side by side: one <b>red</b>, one <b>green</b>, one <b>blue</b>. They are so small that your eye mixes them into one colour. Each light can be off, full, or anywhere between, and its brightness is stored as a number from 0 (off) to 255 (full). That is one byte per light.</p>
+<p>So one pixel is three bytes: how bright the red is, how bright the green is, how bright the blue is.</p>
+<p><b>Try it.</b> Here is a tiny picture, 8 dots across and 8 down, made big so you can see the dots. Tap any dot to see its three bytes, then slide them to repaint it. Then press "See it at real size".</p>
+<div data-widget="pixels" data-key="note2-pixels"></div>
+<p>Light mixes differently from paint. With paint, red and green make brown. With light, red and green at full make <b>yellow</b>, and all three at full make <b>white</b>. <b>Try it</b> on a single pixel: make white, then black, then yellow.</p>
 <div data-widget="rgb" data-key="note2-rgb"></div>
-<p>A phone photo has about 12 million pixels, so it needs about 36 million bytes before any shrinking. Formats such as JPEG store the same picture in far fewer bytes by describing it more cleverly.</p>
+<p>Now count the bytes. Our tiny picture: 64 pixels × 3 = 192 bytes. A phone photo is about 4000 × 3000 = 12 million pixels, so about 36 million bytes before any shrinking. Formats such as JPEG store the same picture in far fewer bytes by describing it more cleverly, for example "this whole patch is the same blue" instead of listing every dot.</p>
 
 <h3>6. Everything else</h3>
 <ul>
@@ -1041,12 +1257,41 @@ int move = keys.nextInt();                // wait for a whole number</pre>
 <li><b>Your program:</b> the instructions are numbers too. <code>Game.java</code> is text, and Java turns it into bytes the machine can carry out.</li>
 </ul>
 
+<h3>7. Your question: should a money system allow decimals at all?</h3>
+<p>You asked whether a system is wrong to allow decimals in a budget or a transaction limit, and how banks handle decimals. Short answer: <b>allowing decimals is right. Money really has them: ₹1,500.75 is a real amount. What matters is how the system stores them and how it does sums with them.</b></p>
+<p><b>Try it.</b> Type 0.10 and add it up 10 times. Then try 1500.75, and 0.25.</p>
+<div data-widget="money" data-key="note2-money" data-start="0.10"></div>
+<p>0.25 comes out exact, because a quarter is one of the fractions switches can make (section 4). 0.10 does not. The error is tiny, but it piles up, and one wrong paisa in a bank is a bug that someone has to explain.</p>
+<p><b>The three safe ways, all used by real banks:</b></p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Way</th><th>How</th><th>Where you meet it</th></tr>
+<tr><td>Whole minor units</td><td>Store paise in a whole-number type: ₹1,500.75 is <code>long paise = 150075;</code></td><td>Card payment messages (payments note 3), many payment systems. Week 2 of the lab builds your money tool this way.</td></tr>
+<tr><td>An exact decimal type in the database</td><td>A column of type <code>DECIMAL(15,2)</code> stores decimal digits exactly: up to 15 digits, 2 of them after the point</td><td>Bank and business databases</td></tr>
+<tr><td>An exact decimal type in Java</td><td><code>BigDecimal</code>, made from text: <code>new BigDecimal("0.10")</code></td><td>Java banking code (Spring Boot services, Apache Fineract)</td></tr>
+</table></div>
+<p>The unsafe way is <code>float</code> or <code>double</code>, for the reason in section 4.</p>
+
+<p><b>The trap that catches real systems.</b> Storing the amount exactly is not enough if the program then turns it into a <code>double</code> to do a sum. Picture a limit check in Java:</p>
+<pre>double used = 0.10, amount = 0.20, limit = 0.30;
+System.out.println(used + amount &gt; limit);   // prints true</pre>
+<p>The customer is exactly at the limit, which should be allowed, but the check says they are over it, because <code>0.10 + 0.20</code> is <code>0.30000000000000004</code> as a <code>double</code>. The same check in paise is always right:</p>
+<pre>long used = 10, amount = 20, limit = 30;
+System.out.println(used + amount &gt; limit);   // prints false</pre>
+<p>(Both outputs were run in Java before going into this note.)</p>
+<p><b>One more trap, inside BigDecimal itself:</b> make it from text, never from a <code>double</code>. <code>new BigDecimal(0.1)</code> receives the double's nearest value and keeps all of it: <code>0.1000000000000000055511151231257827021181583404541015625</code>. <code>new BigDecimal("0.10")</code> is exactly 0.10.</p>
+
+<p><b>Not every currency has two decimals.</b> The list of currencies, ISO 4217, also says how many digits each one has after the point. The rupee, dollar and euro have 2. The Japanese yen has 0: there is no smaller unit. The Kuwaiti and Bahraini dinars have 3: 1,000 fils to a dinar. That is why a card message sends the currency code next to the amount: the number 25000 means ₹250.00 in rupees but ¥25,000 in yen.</p>
+<p><b>What happens to fractions of a paisa?</b> Interest and percentages make them: 7% of ₹10.05 is 70.35 paise. A bank cannot pay 0.35 of a paisa, so it rounds, by a rule it writes down: when to round (each day, or once a month) and which way (for example "half up", or "half to even", which rounds exact halves to the nearest even digit so that over millions of sums the roundings do not all lean one way). You will write rounding yourself in week 2.</p>
+<p>You asked about a particular system you use at work. This site is public, so the answer about that system, with what its code actually does, is in your work notebook instead.</p>
+
 <h3>What to remember</h3>
 <ul>
 <li>A bit is one switch. A byte is 8 bits. An <code>int</code> is 4 bytes.</li>
 <li>Memory is a long row of numbered byte cells.</li>
 <li>Everything is stored as numbers. The type says how to read them.</li>
-<li>Decimals are stored approximately. Never use them for money.</li>
+<li>A byte has 2 × 2 × 2 × 2 × 2 × 2 × 2 × 2 = 256 patterns. Each half of a byte is one hex digit, so a byte is two: 65 is 41.</li>
+<li>A pixel is three bytes: red, green and blue.</li>
+<li><code>double</code> stores decimals approximately. For money use whole paise in a <code>long</code>, <code>BigDecimal</code> in Java, or <code>DECIMAL</code> in a database, and do the sums in that exact form too.</li>
 </ul>`,
   },
   {

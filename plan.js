@@ -3,43 +3,88 @@
 // A target with "missions" is ticked automatically in the lab when those missions are passed.
 
 window.PLAN = {
-  updated: '2026-10-12',
-  // Lessons 1 to 7 were all passed on the first night, so the week was pulled forward to the second stretch.
+  updated: '2026-10-15',
+  // 15 Oct: he asked "how far am I from OOP and DSA?" and said he will finish lessons 8 to 12 in one go.
+  // The plan was pulled forward again, and a "where you are" map was added (position, below).
   week: {
     title: 'Week 1: 12 to 18 October',
-    goal: 'Turn the Arena fight into a game you play: the monster hits back, dice decide, you choose the moves. Prove the first stretch with a rematch, and understand how one card payment travels. The days below are the latest, not a waiting line: when something is done early, go straight to the next thing.',
+    goal: 'Finish the Arena in one go: the monster hits back, dice decide, you choose the moves, and the moves get names (methods, Java\'s word for functions). Then prove it with a rematch on a later day. On breaks, payments notes 2, 3 and 4. The days below are the latest, not a waiting line.',
   },
   targets: [
     {
-      by: 'Today, Monday 12',
+      by: 'Tonight, Thursday 15',
       items: [
         { text: 'Lesson 8: The monster hits back (two conditions)', missions: ['w1m8'] },
         { text: 'Lesson 9: Roll the dice (random numbers)', missions: ['w1m9'] },
-        { text: 'On a break: payments note 2, "Who is who, with real names". Mark it as read and answer its check-yourself questions.' },
-        { text: 'On a break: Maths 1, place value, binary and hex. Read it, then one round of each drill at level 1.' },
+        { text: 'Lesson 10: Your move (reading what the player types)', missions: ['w1m10'] },
+        { text: 'Lesson 11: Give the moves names (methods, which other languages call functions)', missions: ['w1m11'] },
+        { text: 'Lesson 12: the second timed challenge, the shop. Use the five steps from "How to read a problem" first.', missions: ['w1m12'] },
       ],
     },
     {
-      by: 'By Wednesday 14',
+      by: 'On breaks, by Sunday 18',
       items: [
-        { text: 'Lesson 10: Your move (reading what the player types)', missions: ['w1m10'] },
-        { text: 'Lesson 11: Give the moves names (methods)', missions: ['w1m11'] },
-        { text: 'On breaks: one maths drill a day. Finish Maths 1 at level 2 and start Maths 2, percentages.' },
-        { text: 'On breaks: the new note "How to read a problem", then concept notes 8 to 11 with their "check yourself" questions' },
+        { text: 'Your marks are answered: open "Bits, bytes..." again. Sections 1a, 1b, 1c, 5 and 7 are new.' },
+        { text: 'Payments note 2, then note 3 (the message the shop\'s bank sends) and note 4 (what the card and terminal say). Mark each as read and answer its check-yourself questions.' },
+        { text: 'One maths drill a day: Maths 1 to level 2, then Maths 2, percentages. Week 2 uses percentages.' },
       ],
     },
     {
       by: 'By Sunday 18',
       items: [
-        { text: 'Lesson 12: the second timed challenge, the shop', missions: ['w1m12'] },
-        { text: 'Rematch: one new problem on variables, if and while, with no help. Passing it is what counts as mastered.' },
-        { text: 'Payments: note 3, on what data travels in the request and in what format (written when note 2 is marked read)' },
-        { text: 'Maths: every drill in Maths 1 scored 9 or more on two different days (that locks it in), and Maths 2 under way' },
-        { text: 'Use the five steps from "How to read a problem" before lesson 12 and before the rematch' },
-        { text: 'Sunday: 15 minutes with the tutor to look at the week and set the next one. Week 2 adds 5 to 10 minutes of terminal and Git to each laptop session.' },
+        { text: 'Rematch: one new problem on variables, if and while, with no help, on a later day than the lessons. Passing it is what counts as mastered.' },
+        { text: 'Week 2, the money tool, opens when lesson 12 is passed. Its first lessons include 5 minutes of terminal and Git: from then on you save your own work.' },
+        { text: 'Sunday: 15 minutes with the tutor to look at the week and set the next one.' },
       ],
     },
   ],
+  // "Where you are": the answer to "how far am I from OOP and DSA?". state: done | now | next | later.
+  // Items with missions tick themselves in the lab when those missions are passed.
+  position: {
+    title: 'Where you are in Java',
+    summary: 'You passed lessons 1 to 7 in one night with no hints. That is real speed. It is not mastery yet: mastery is solving a fresh problem alone on a later day, which is what the rematch is for. Loops and if are the floor of programming. Interviews for backend jobs are decided by two things built on top of them: object-oriented design and problem solving (DSA). Both need methods and arrays first, and those are the next lessons.',
+    distance: [
+      { to: 'Functions', how: '3 lessons away', what: 'Lesson 11. Java calls them methods. Week 2 then uses them properly: values in, a result out.' },
+      { to: 'Problem solving (DSA)', how: 'About 10 lessons away', what: 'Starts in week 3, once arrays are in (week 2). Then a short problem every day, for months.' },
+      { to: 'Object-oriented programming', how: 'About 17 lessons away', what: 'Weeks 4 to 5: the Arena comes back with Hero and Monster as objects. At your pace that is 2 to 3 weeks of evenings, not 5.' },
+    ],
+    ladder: [
+      {
+        group: 'Stage 1: programming basics',
+        items: [
+          { text: 'Printing, variables, arithmetic, reading errors (lessons 1 to 4)', missions: ['w1m1', 'w1m2', 'w1m3', 'w1m4'] },
+          { text: 'if and else, while loops, the first timed challenge (lessons 5 to 7)', missions: ['w1m5', 'w1m6', 'w1m7'] },
+          { text: 'Two conditions: && and || (lesson 8)', missions: ['w1m8'], state: 'now' },
+          { text: 'Random numbers (lesson 9)', missions: ['w1m9'], state: 'now' },
+          { text: 'Reading what the player types (lesson 10)', missions: ['w1m10'], state: 'now' },
+          { text: 'Methods, Java\'s functions (lesson 11)', missions: ['w1m11'], state: 'now' },
+          { text: 'Second timed challenge (lesson 12)', missions: ['w1m12'], state: 'now' },
+          { text: 'Rematch on a later day: the first proof of mastery', state: 'next' },
+          { text: 'Week 2, the money tool: long and paise, percentages and interest, methods with parameters and return values, arrays, text formatting, Git', state: 'next' },
+          { text: 'Week 3, the card-data decoder: bytes and hex in code, char and String in depth, for loops, arrays of bytes', state: 'later' },
+        ],
+      },
+      {
+        group: 'Problem solving (DSA), daily from week 3',
+        items: [
+          { text: 'Arrays and strings: counting, searching, two pointers', state: 'later' },
+          { text: 'How fast is it (Big O), sorting, binary search', state: 'later' },
+          { text: 'Hash maps, stacks and queues, recursion', state: 'later' },
+          { text: 'Trees and graphs (months 3 to 5)', state: 'later' },
+        ],
+      },
+      {
+        group: 'Stage 2: object-oriented programming',
+        items: [
+          { text: 'Classes and objects: Hero and Monster become objects with their own data and methods', state: 'later' },
+          { text: 'Constructors, private fields, this: protecting an object\'s data', state: 'later' },
+          { text: 'Inheritance, interfaces, polymorphism: many kinds of monster, one fight loop', state: 'later' },
+          { text: 'Collections (ArrayList, HashMap), exceptions, files', state: 'later' },
+        ],
+      },
+    ],
+    rule: 'Fast-track rule: if you pass lessons 8 to 12 without hints and the rematch on a later day, week 2 runs at two lessons a night and objects start in week 4. Hints taken or a failed rematch mean the normal pace. The activity log decides, not a feeling.',
+  },
   tracks: [
     { name: 'Programming', where: 'Laptop, evenings', time: 'About 90 minutes a day', what: 'The missions. This is the main track and the only one that needs the laptop every day.' },
     { name: 'Maths', where: 'Phone, office breaks', time: 'About 10 minutes a day', what: 'One drill a day: rounds of 10 questions with the working shown on a miss. 9 or more on two different days locks a level in.' },

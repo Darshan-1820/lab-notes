@@ -32,6 +32,12 @@
 //   flow    a message travelling between parties: data-ref="name" plus widgets: { name: { parties, steps } }
 //   cardnum the digits of a card number: likely network, the BIN, and the Luhn check worked out live
 //   stepper a walk-through inside a note: data-ref="name" plus widgets: { name: { code, steps } } on the note
+//   patterns  how many patterns n switches make, doubling list + counts by "how many on" (data-n)
+//   hexbyte   one byte as two halves of 4 switches = two hex digits, plus the grey it would be (data-start)
+//   pixels    an 8 x 8 picture; tap a dot to see and change its three bytes
+//   money     an amount stored as double / paise / DECIMAL / card-message field, and a running total (data-start)
+//   iso8583   a card authorisation request and answer: message type, bitmap, fields, chip data (TLV)
+//   apdu      the commands a terminal sends to a chip card, byte by byte
 
 (function () {
   const state = {};   // widget positions, kept while the page stays open
@@ -178,6 +184,59 @@
   .cnkey .cn { width: 14px; height: 14px; font-size: 0; vertical-align: middle; margin: 0 4px 0 8px; }
   .cnkey .cn:first-child { margin-left: 0; }
   .wrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .patgrid { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .patchip { font: 14px var(--mono, Consolas, monospace); padding: 3px 7px; border-radius: 5px; border: 1px solid var(--line); }
+  .patchip.hi { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .patterns .dicecol { border: 0; padding: 0; }
+  .hexhalves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .hexhalf { border: 2px solid var(--blue); border-radius: 8px; padding: 6px 8px 8px; min-width: 0; }
+  .hexhalf .bits { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .hexhalf .bit { height: 40px; font-size: 16px; }
+  .hexdigit { margin-top: 6px; font-size: 14px; }
+  .hexdigit b.big { font: 700 24px var(--mono, Consolas, monospace); color: var(--accent); }
+  .hexdigits { display: flex; flex-wrap: wrap; gap: 3px; }
+  .greyrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+  .greystrip { position: relative; height: 16px; border-radius: 4px; margin-top: 8px; background: linear-gradient(90deg, #000, #fff); border: 1px solid var(--line); }
+  .greymark { position: absolute; top: -5px; width: 4px; height: 24px; margin-left: -2px; background: var(--bad); border-radius: 2px; }
+  .pxgrid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; width: min(100%, 280px); }
+  .pxgrid .px { aspect-ratio: 1; padding: 0; border-radius: 2px; border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); min-width: 0; }
+  .pxgrid .px.on { outline: 3px solid var(--blue); outline-offset: 1px; z-index: 1; }
+  .pxgrid.small { width: 8px; gap: 0; grid-template-columns: repeat(8, 1px); }
+  .pxgrid.small .px { border: 0; border-radius: 0; width: 1px; height: 1px; aspect-ratio: auto; }
+  .money .wline input { width: 160px; }
+  .mti { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+  .mtinote { margin-left: 8px; font-size: 14px; }
+  .bmgrid { display: grid; gap: 3px; }
+  .bmrow { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)) 30px; gap: 3px; align-items: center; }
+  .bmcell { padding: 0; height: 30px; font: 12px var(--mono, Consolas, monospace); color: var(--dim); border-radius: 4px; min-width: 0; }
+  .bmcell:disabled { cursor: default; opacity: .55; }
+  .bmcell.on { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); color: var(--text); font-weight: 600; opacity: 1; }
+  .bmcell.sel { background: var(--accent); color: var(--accent-ink); }
+  .bmhex { font: 600 14px var(--mono, Consolas, monospace); text-align: right; }
+  .isolist { display: grid; gap: 4px; }
+  .isorow { display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(0, 40%); gap: 8px; text-align: left; padding: 6px 10px; align-items: center; }
+  .isorow.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .isonum { font: 600 14px var(--mono, Consolas, monospace); color: var(--dim); }
+  .isoval { font: 13px var(--mono, Consolas, monospace); color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+  .isoinfo { border-left: 4px solid var(--blue); padding: 6px 12px; margin-top: 12px; background: var(--panel2); border-radius: 0 8px 8px 0; min-width: 0; }
+  .isoinfo pre { margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .apbytes { display: flex; flex-wrap: wrap; gap: 4px; }
+  .apb { display: grid; gap: 1px; padding: 4px 5px; min-width: 36px; text-align: center; font: 600 15px var(--mono, Consolas, monospace); }
+  .apb small { font: 10px var(--mono, Consolas, monospace); color: var(--dim); }
+  .apb.ap-cla, .apb.ap-ins, .apb.ap-p1, .apb.ap-p2 { border-color: var(--blue); }
+  .apb.ap-lc, .apb.ap-le { border-color: var(--warn); }
+  .apb.ap-data { border-color: var(--accent); }
+  .apb.sel { background: var(--panel); outline: 2px solid var(--text); }
+  .apdu .wrow button { font-size: 13.5px; padding: 6px 10px; }
+  .ladder .lrow { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--line); }
+  .ladder .lstate { font: 600 10.5px var(--mono, Consolas, monospace); letter-spacing: .5px; text-transform: uppercase; text-align: center; border-radius: 99px; padding: 2px 0; border: 1px solid var(--line); color: var(--dim); }
+  .ladder .lstate.done { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .ladder .lstate.now { border-color: var(--blue); color: var(--blue); }
+  .ladder .lrow.done .ltext { color: var(--dim); }
+  .ladder .lgroup { margin: 14px 0 2px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
+  .distance { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 10px 0 4px; }
+  .distance > div { border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+  .distance b.big { display: block; font-size: 21px; margin: 2px 0; }
   `;
   const style = document.createElement('style');
   style.textContent = css;
@@ -647,6 +706,24 @@
       week.append(ul);
     });
     wrap.append(week);
+    if (plan.position) {
+      const p = plan.position, card = el('div', 'card');
+      card.append(el('h2', 'plan-h', esc(p.title)), el('p', '', esc(p.summary)));
+      const dist = el('div', 'distance');
+      p.distance.forEach(d => dist.append(el('div', '', '<span class="muted">' + esc(d.to) + '</span><b class="big">' + esc(d.how) + '</b><div>' + esc(d.what) + '</div>')));
+      card.append(dist);
+      const lad = el('div', 'ladder');
+      p.ladder.forEach(g => {
+        lad.append(el('div', 'lgroup', esc(g.group)));
+        g.items.forEach(it => {
+          const s = it.state === 'done' || (isDone && it.missions && it.missions.every(isDone)) ? 'done' : (it.state || 'later');
+          lad.append(el('div', 'lrow ' + s, '<span class="lstate ' + s + '">' + s + '</span><span class="ltext">' + esc(it.text) + '</span>'));
+        });
+      });
+      card.append(lad);
+      if (p.rule) card.append(el('p', 'muted', esc(p.rule)));
+      wrap.append(card);
+    }
     const day = el('div', 'card');
     day.append(el('h2', 'plan-h', 'How one day is split'), el('p', 'muted', 'Different subjects go in different parts of the day, so you never juggle two in one sitting.'));
     plan.tracks.forEach(t => day.append(el('div', 'track-row', '<b>' + esc(t.name) + '</b><span class="muted">' + esc(t.where + ' · ' + t.time) + '</span><div>' + esc(t.what) + '</div>')));
@@ -990,7 +1067,328 @@
     drill: drillState, saveDrill, addRound,
   };
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget };
+
+  // ---- how many patterns n switches can make: <div data-widget="patterns" data-key data-n> ----
+  function patternsWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { n: Number(node.dataset.n || 3), k: null };
+    const st = state[key];
+    const choose = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return Math.round(r); };
+    const all = n => Array.from({ length: Math.pow(2, n) }, (_, v) => v.toString(2).padStart(n, '0'));
+    function draw() {
+      const n = st.n, total = Math.pow(2, n);
+      node.innerHTML = ''; node.className = 'bitsbox patterns';
+      const top = el('div', 'wrow');
+      const less = btn('One switch less', '', () => { st.n = Math.max(1, n - 1); st.k = null; draw(); });
+      const more = btn('One switch more', 'primary', () => { st.n = Math.min(8, n + 1); st.k = null; draw(); });
+      less.disabled = n === 1; more.disabled = n === 8;
+      top.append(less, more);
+      node.append(top);
+      node.append(el('div', 'bitinfo', n + ' switch' + (n === 1 ? '' : 'es') + ': <b>' + Array(n).fill('2').join(' × ') + ' = ' + total + '</b> patterns'));
+      if (n <= 5) {
+        const half = total / 2, grid = el('div', 'patgrid');
+        all(n).forEach((p, i) => grid.append(el('span', 'patchip' + (n > 1 && i >= half ? ' hi' : ''), '<b>' + p[0] + '</b>' + p.slice(1))));
+        node.append(grid);
+        if (n > 1) node.append(el('div', 'stepnote', 'Look at the first switch (in bold). The top half of the list is every ' + (n - 1) + '-switch pattern with the new switch <b>off</b>. The bottom half (green) is the very same list again with it <b>on</b>. That is why one more switch always doubles the count.'));
+        else node.append(el('div', 'stepnote', 'One switch, two choices: off or on.'));
+      } else {
+        node.append(el('div', 'stepnote', 'Too many to list here. Each extra switch doubles the list: 2, 4, 8, 16, 32, 64, 128, 256.'));
+      }
+      node.append(el('div', 'cnlabel', 'The same ' + total + ' patterns, sorted by how many switches are on. Tap a bar.'));
+      const bars = el('div', 'dicebars'); bars.style.setProperty('--n', n + 1);
+      const peak = choose(n, Math.floor(n / 2));
+      for (let k = 0; k <= n; k++) {
+        const c = choose(n, k), col = el('button', 'dicecol' + (st.k === k ? ' on' : ''));
+        col.type = 'button'; col.title = c + ' patterns with ' + k + ' on';
+        col.setAttribute('aria-label', c + ' patterns with ' + k + ' switches on');
+        const bar = el('div', 'bar'); bar.style.height = (c / peak * 100) + '%';
+        col.append(bar); col.addEventListener('click', () => { st.k = st.k === k ? null : k; draw(); });
+        bars.append(col);
+      }
+      node.append(bars);
+      const axis = el('div', 'diceaxis'); for (let k = 0; k <= n; k++) axis.append(el('span', '', String(k)));
+      node.append(axis, el('div', 'worth', 'how many switches are on'));
+      const counts = []; for (let k = 0; k <= n; k++) counts.push(choose(n, k));
+      node.append(el('div', 'stepnote', counts.join(' + ') + ' = <b>' + total + '</b>'));
+      if (st.k !== null) {
+        const list = all(n).filter(p => p.split('1').length - 1 === st.k);
+        node.append(el('div', 'cnlabel', list.length + ' pattern' + (list.length === 1 ? '' : 's') + ' with exactly ' + st.k + ' on. Counting these is a "choose" question: in how many ways can you pick ' + st.k + ' of the ' + n + ' switches to turn on?'));
+        const g = el('div', 'patgrid'); list.forEach(p => g.append(el('span', 'patchip', p))); node.append(g);
+      }
+    }
+    draw();
+  }
+
+  // ---- one byte as two hex digits: <div data-widget="hexbyte" data-key data-start> ----
+  function hexByteWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) { const s = Number(node.dataset.start || 65); state[key] = { bits: Array.from({ length: 8 }, (_, i) => (s >> (7 - i)) & 1) }; }
+    const st = state[key], HEX = '0123456789ABCDEF';
+    function draw() {
+      node.innerHTML = ''; node.className = 'bitsbox hexbyte';
+      const halves = el('div', 'hexhalves');
+      let hi = 0, lo = 0;
+      [0, 1].forEach(h => {
+        const box = el('div', 'hexhalf'), row = el('div', 'bits'); row.style.setProperty('--n', 4);
+        let v = 0;
+        for (let j = 0; j < 4; j++) {
+          const i = h * 4 + j, w = 8 >> j, bit = st.bits[i];
+          if (bit) v += w;
+          const cell = el('div', 'bitcell'), sw = el('button', 'bit' + (bit ? ' on' : ''), bit ? '1' : '0');
+          sw.type = 'button'; sw.setAttribute('aria-label', (h ? 'Right' : 'Left') + ' half, switch worth ' + w + ', ' + (bit ? 'on' : 'off'));
+          sw.addEventListener('click', () => { st.bits[i] = bit ? 0 : 1; draw(); });
+          cell.append(sw, el('div', 'worth', String(w)));
+          row.append(cell);
+        }
+        if (h) lo = v; else hi = v;
+        box.append(el('div', 'cnlabel', h ? 'Right half' : 'Left half'), row, el('div', 'hexdigit', 'worth <b>' + v + '</b> → hex digit <b class="big">' + HEX[v] + '</b>'));
+        halves.append(box);
+      });
+      node.append(halves);
+      const v = hi * 16 + lo;
+      node.append(el('div', 'bitinfo', 'Hex <b>' + HEX[hi] + HEX[lo] + '</b> &nbsp;=&nbsp; ' + hi + ' × 16 + ' + lo + ' &nbsp;=&nbsp; <b>' + v + '</b>'));
+      const strip = el('div', 'hexdigits');
+      for (let d = 0; d < 16; d++) strip.append(el('span', 'cn' + (d === hi || d === lo ? ' chk' : ''), HEX[d]));
+      node.append(el('div', 'cnlabel', 'The 16 hex digits. After 9 the letters A to F stand for 10 to 15.'), strip);
+      const grey = el('div', 'greyrow');
+      const sw = el('span', 'swatch', ''); sw.style.background = 'rgb(' + v + ',' + v + ',' + v + ')';
+      grey.append(sw, el('span', '', 'Red, green and blue all set to ' + v + '.'));
+      const bar = el('div', 'greystrip'), mark = el('span', 'greymark'); mark.style.left = (v / 255 * 100) + '%'; bar.append(mark);
+      node.append(el('div', 'cnlabel', 'The same byte read as a shade of grey (0 is black, 255 is white)'), grey, bar);
+    }
+    draw();
+  }
+
+  // ---- a tiny picture you can zoom into: <div data-widget="pixels" data-key> ----
+  function pixelsWidget(node) {
+    const key = node.dataset.key;
+    const pal = { K: [20, 24, 32], Y: [255, 196, 0], W: [250, 250, 250], R: [220, 40, 50] };
+    const art = ['KKKKKKKK', 'KYYYYYYK', 'KYWWWWYK', 'KYWRRWYK', 'KYWRRWYK', 'KYWWWWYK', 'KYYYYYYK', 'KKKKKKKK'];
+    if (!state[key]) state[key] = { px: art.map(r => r.split('').map(c => pal[c].slice())), sel: [3, 3], small: false };
+    const st = state[key];
+    const hex = v => v.toString(16).toUpperCase().padStart(2, '0');
+    function draw(focusName) {
+      node.innerHTML = ''; node.className = 'bitsbox pixels';
+      const grid = el('div', 'pxgrid' + (st.small ? ' small' : ''));
+      st.px.forEach((row, y) => row.forEach((c, x) => {
+        const b = el('button', 'px' + (!st.small && st.sel[0] === y && st.sel[1] === x ? ' on' : ''));
+        b.type = 'button'; b.style.background = 'rgb(' + c.join(',') + ')';
+        b.setAttribute('aria-label', 'Pixel row ' + (y + 1) + ' column ' + (x + 1));
+        b.addEventListener('click', () => { st.sel = [y, x]; st.small = false; draw(); });
+        grid.append(b);
+      }));
+      const row = el('div', 'wrow');
+      row.append(btn(st.small ? 'Zoom in again' : 'See it at real size', '', () => { st.small = !st.small; draw(); }));
+      node.append(grid, row);
+      if (st.small) { node.append(el('div', 'stepnote', 'That speck is the whole picture: 8 dots across and 8 down. Your screen is millions of dots like these.')); return; }
+      const c = st.px[st.sel[0]][st.sel[1]];
+      node.append(el('div', 'cnlabel', 'The dot you tapped: row ' + (st.sel[0] + 1) + ', column ' + (st.sel[1] + 1) + '. It is three bytes. Slide them to repaint it.'));
+      ['Red', 'Green', 'Blue'].forEach((name, i) => {
+        const r = el('div', 'rgbrow');
+        const input = el('input'); input.type = 'range'; input.min = 0; input.max = 255; input.value = c[i]; input.setAttribute('aria-label', name);
+        input.addEventListener('input', () => { c[i] = Number(input.value); draw(name); });
+        r.append(el('span', '', name), input, el('span', '', String(c[i])), el('span', '', byteBits(c[i])));
+        node.append(r);
+        if (focusName === name) setTimeout(() => input.focus(), 0);
+      });
+      node.append(el('div', 'meanings', '<div>Those three bytes in hex: <b>' + hex(c[0]) + ' ' + hex(c[1]) + ' ' + hex(c[2]) + '</b>. Web pages write this colour as <b>#' + hex(c[0]) + hex(c[1]) + hex(c[2]) + '</b>.</div><div>The whole picture: 8 × 8 = 64 dots, × 3 bytes = <b>192 bytes</b>.</div>'));
+    }
+    draw();
+  }
+
+  // ---- an amount of money stored three ways: <div data-widget="money" data-key data-start> ----
+  function moneyWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { v: node.dataset.start || '0.10', times: 10 };
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox money';
+    const line = el('div', 'wline', '<span>Amount in rupees</span>');
+    const input = el('input'); input.type = 'text'; input.inputMode = 'decimal'; input.value = st.v; input.setAttribute('aria-label', 'Amount in rupees');
+    line.append(input);
+    const out = el('div', 'meanings');
+    const line2 = el('div', 'wline', '<span>Add it up this many times</span>');
+    const times = el('input'); times.type = 'number'; times.min = 1; times.max = 1000; times.value = st.times; times.setAttribute('aria-label', 'How many times');
+    line2.append(times);
+    const out2 = el('div', 'meanings');
+    const rupees = p => { const s = p.toString().padStart(3, '0'); return s.slice(0, -2) + '.' + s.slice(-2); };
+    function draw() {
+      st.v = input.value.trim(); st.times = Math.max(1, Math.min(1000, Math.trunc(Number(times.value) || 1)));
+      const m = st.v.match(/^(\d{1,10})(?:\.(\d{1,2}))?$/);
+      if (!m) { out.innerHTML = '<div class="bitmsg">Type an amount like 250 or 1500.75 (at most two digits after the point).</div>'; out2.innerHTML = ''; return; }
+      const paise = BigInt(m[1]) * 100n + BigInt((m[2] || '0').padEnd(2, '0'));
+      const asDouble = Number(st.v);
+      const exact = asDouble.toFixed(20).replace(/0+$/, '').replace(/\.$/, '');
+      const plain = rupees(paise).replace(/\.?0+$/, '') || '0';
+      out.innerHTML = '<div>As a <code>double</code>, what is really stored: <b>' + esc(exact) + '</b> ' + (exact === plain ? '<span class="yes">(exact this time)</span>' : '<span class="bad">(close, not exact)</span>') + '</div>'
+        + '<div>As whole paise in a <code>long</code>: <b>' + paise + '</b> <span class="yes">(exact)</span></div>'
+        + '<div>In a database column <code>DECIMAL(15,2)</code>: <b>' + rupees(paise) + '</b> <span class="yes">(exact: it keeps decimal digits, not halves and quarters)</span></div>'
+        + '<div>In a card payment message, the amount field, 12 digits of paise: <b>' + paise.toString().padStart(12, '0') + '</b></div>';
+      let d = 0; for (let i = 0; i < st.times; i++) d += asDouble;
+      const p = paise * BigInt(st.times), right = rupees(p);
+      const same = Number(right) === d;
+      out2.innerHTML = '<div>Adding <code>double</code>s: <b>' + esc(String(d)) + '</b> ' + (same ? '<span class="yes">(right this time)</span>' : '<span class="bad">(wrong: the tiny errors piled up)</span>') + '</div>'
+        + '<div>Adding paise, then showing rupees: <b>' + right + '</b> <span class="yes">(always right)</span></div>';
+    }
+    input.addEventListener('input', draw); times.addEventListener('input', draw);
+    node.append(line, out, el('div', 'cnlabel', 'Now add the amount to itself, the way a running total does.'), line2, out2);
+    draw();
+  }
+
+  // ---- a card authorisation message, field by field: <div data-widget="iso8583" data-key> ----
+  const ISO = {
+    request: {
+      mti: '0100', mtiNote: 'Authorisation request, sent by the shop\'s bank',
+      fields: [
+        [2, 'Card number (PAN)', 'n..19, LLVAR', '4111111111111111', 'The card number. LLVAR means its length goes first, as two digits, because card numbers are not all the same length. On the wire: 16, then the 16 digits.'],
+        [3, 'Processing code', 'n6', '000000', 'What kind of transaction. The first two digits are the type: 00 a purchase, 01 cash from an ATM, 20 a refund, 31 a balance enquiry. The other four name the accounts; 0000 means "the default ones".'],
+        [4, 'Amount', 'n12', '000000025000', 'The amount in the smallest unit of the currency, padded with zeros to 12 digits. 25000 paise is ₹250.00. There is no decimal point anywhere: whole numbers only.'],
+        [7, 'Date and time sent', 'n10, MMDDhhmmss', '1015143005', 'When this message was sent: 15 October, 14:30:05, in UTC.'],
+        [11, 'Trace number (STAN)', 'n6', '004187', 'A counter the sender adds one to for every message. The answer carries the same number back, so the sender can match each answer to its question.'],
+        [14, 'Expiry date', 'n4, YYMM', '2908', 'The card expires at the end of August 2029. Year first, then month.'],
+        [22, 'How the card was read', 'n3', '071', 'The first two digits say how the card number was captured: 07 a contactless chip, 05 the chip inserted, 01 typed by hand. The last digit says whether this terminal can take a PIN: 1 means yes.'],
+        [25, 'Condition', 'n2', '00', 'The situation at the counter. 00 means normal: the customer is there with the card.'],
+        [37, 'Reference number (RRN)', 'an12', '528814004187', 'A reference for this payment that stays the same through refunds and disputes later. It is what a bank asks for when you complain about a charge.'],
+        [41, 'Terminal ID', 'ans8', 'TRM00042', 'Which terminal.'],
+        [42, 'Merchant ID', 'ans15', 'ARENA0000001234', 'Which shop, as the shop\'s bank knows it.'],
+        [43, 'Shop name and place', 'ans40', 'ARENA SNACKS           BENGALURU    IN', 'Shop name, city and country, each padded with spaces to a fixed width. Roughly what you later see on your bank statement.'],
+        [49, 'Currency', 'n3', '356', 'The currency as a number from the list called ISO 4217: 356 is the Indian rupee, 840 the US dollar, 978 the euro. Field 4 means nothing without this.'],
+        [55, 'Chip data', 'b..255, LLLVAR', '9F0206000000025000 5F2A020356 9F37041A2B3C4D 9F36020012 9F2608C3A1F47E2290B5D1', 'What the chip said during the tap, as a list of tag, length, value (TLV). The table below splits it.'],
+      ],
+    },
+    response: {
+      mti: '0110', mtiNote: 'Authorisation response, sent back by the card\'s bank',
+      fields: [
+        [2, 'Card number (PAN)', 'n..19, LLVAR', '4111111111111111', 'Copied from the question.'],
+        [3, 'Processing code', 'n6', '000000', 'Copied from the question.'],
+        [4, 'Amount', 'n12', '000000025000', 'Copied from the question.'],
+        [7, 'Date and time sent', 'n10, MMDDhhmmss', '1015143005', 'Copied from the question.'],
+        [11, 'Trace number (STAN)', 'n6', '004187', 'The same number as in the question. This is how the shop\'s bank knows which question this answers.'],
+        [37, 'Reference number (RRN)', 'an12', '528814004187', 'Copied from the question.'],
+        [38, 'Approval code', 'an6', 'A1B2C3', 'Given by the card\'s bank only when it says yes. It is printed on the receipt.'],
+        [39, 'Response code', 'an2', '00', 'The answer itself. 00 means approved. The table under this diagram lists the common "no" codes.'],
+        [41, 'Terminal ID', 'ans8', 'TRM00042', 'Copied from the question.'],
+        [42, 'Merchant ID', 'ans15', 'ARENA0000001234', 'Copied from the question.'],
+        [49, 'Currency', 'n3', '356', 'Copied from the question.'],
+      ],
+    },
+  };
+  const TLV = { '9F02': 'The amount, as the chip saw it', '5F2A': 'The currency, as the chip saw it (0356 is the rupee)', '9F37': 'A random number from the terminal, so no two taps are the same', '9F36': 'The chip\'s own counter of taps (ATC). Hex 0012 is 18: its 18th tap', '9F26': 'The cryptogram: a one-time code only the real chip could make. Payments note 5.' };
+  function splitTlv(s) {
+    const h = s.replace(/\s+/g, ''), out = []; let i = 0;
+    while (i < h.length) {
+      let tag = h.substr(i, 2); i += 2;
+      if ((parseInt(tag, 16) & 0x1F) === 0x1F) { tag += h.substr(i, 2); i += 2; }
+      const len = parseInt(h.substr(i, 2), 16); i += 2;
+      out.push({ tag, len, value: h.substr(i, len * 2) }); i += len * 2;
+    }
+    return out;
+  }
+  function bitmapOf(nums) {
+    const bytes = new Array(8).fill(0);
+    nums.forEach(f => { const b = f - 1; bytes[b >> 3] |= 0x80 >> (b & 7); });
+    return bytes;
+  }
+  function iso8583Widget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { which: 'request', sel: 4 };
+    const st = state[key];
+    const h2 = b => b.toString(16).toUpperCase().padStart(2, '0');
+    function draw() {
+      const msg = ISO[st.which], nums = msg.fields.map(f => f[0]), bm = bitmapOf(nums);
+      node.innerHTML = ''; node.className = 'bitsbox iso';
+      const tabs = el('div', 'wrow');
+      [['request', 'The question (0100)'], ['response', 'The answer (0110)']].forEach(([id, label]) => {
+        const b = btn(label, st.which === id ? 'primary' : '', () => { st.which = id; if (!ISO[id].fields.some(f => f[0] === st.sel)) st.sel = 4; draw(); });
+        b.setAttribute('aria-pressed', st.which === id ? 'true' : 'false'); tabs.append(b);
+      });
+      node.append(tabs);
+      node.append(el('div', 'cnlabel', '1. The message type: 4 digits'));
+      node.append(el('div', 'mti', msg.mti.split('').map(c => '<span class="cn chk">' + c + '</span>').join('') + '<span class="mtinote">' + esc(msg.mtiNote) + '</span>'));
+      node.append(el('div', 'worth', 'Digit 1: version of the standard (0 = 1987). Digit 2: class (1 = authorisation, 2 = a payment that moves money, 4 = reversal, 8 = network check). Digit 3: function (0 = question, 1 = answer). Digit 4: who started it (0 = the shop\'s side).'));
+      node.append(el('div', 'cnlabel', '2. The bitmap: 64 switches, one per field. A switch is on when that field is in the message. Tap a lit one.'));
+      const grid = el('div', 'bmgrid');
+      for (let r = 0; r < 8; r++) {
+        const row = el('div', 'bmrow');
+        for (let c = 0; c < 8; c++) {
+          const f = r * 8 + c + 1, on = nums.includes(f);
+          const cell = el('button', 'bmcell' + (on ? ' on' : '') + (f === st.sel ? ' sel' : ''), String(f));
+          cell.type = 'button'; cell.disabled = !on;
+          cell.setAttribute('aria-label', 'Field ' + f + (on ? ', present' : ', not in this message'));
+          if (on) cell.addEventListener('click', () => { st.sel = f; draw(); });
+          row.append(cell);
+        }
+        row.append(el('span', 'bmhex', h2(bm[r])));
+        grid.append(row);
+      }
+      node.append(grid);
+      node.append(el('div', 'stepnote', 'Each row of 8 switches is one byte, shown in hex on the right. The whole bitmap travels as 8 bytes: <b>' + bm.map(h2).join('') + '</b>. Switch 1 is off, which means "there is no second bitmap": every field here is numbered 64 or lower.'));
+      node.append(el('div', 'cnlabel', '3. The fields, in number order. Tap one.'));
+      const list = el('div', 'isolist');
+      msg.fields.forEach(f => {
+        const b = el('button', 'isorow' + (f[0] === st.sel ? ' on' : ''), '<span class="isonum">' + f[0] + '</span><span>' + esc(f[1]) + '</span><span class="isoval">' + esc(f[3]) + '</span>');
+        b.type = 'button'; b.addEventListener('click', () => { st.sel = f[0]; draw(); });
+        list.append(b);
+      });
+      node.append(list);
+      const f = msg.fields.find(x => x[0] === st.sel) || msg.fields[0];
+      const info = el('div', 'isoinfo');
+      info.append(el('div', 'flowtitle', 'Field ' + f[0] + ': ' + esc(f[1])), el('div', 'worth', 'Format: ' + esc(f[2])), el('pre', '', esc(f[3])), el('div', '', esc(f[4])));
+      if (f[0] === 55) {
+        const t = el('table', 'chars');
+        t.innerHTML = '<tr><th>Tag</th><th>Length</th><th>Value</th></tr>' + splitTlv(f[3]).map(x => '<tr><td>' + x.tag + '</td><td>' + x.len + ' bytes</td><td>' + x.value + '</td></tr><tr><td colspan="3" style="white-space: normal; font-family: inherit;">' + esc(TLV[x.tag] || '') + '</td></tr>').join('');
+        const w = el('div', 'charswrap'); w.append(t); info.append(w);
+      }
+      node.append(info);
+    }
+    draw();
+  }
+
+  // ---- one chip-card command, byte by byte: <div data-widget="apdu" data-key> ----
+  const APDUS = [
+    { name: 'SELECT the payment list', bytes: '00 A4 04 00 0E 32 50 41 59 2E 53 59 53 2E 44 44 46 30 31 00', data: 'The name 2PAY.SYS.DDF01 as text bytes: 32 is "2", 50 is "P", 41 is "A", 59 is "Y". Every contactless payment card answers to this name.', reply: 'the list of payment apps on the card' },
+    { name: 'SELECT one app', bytes: '00 A4 04 00 07 A0 00 00 00 03 10 10 00', data: 'The app\'s ID (AID). A0 00 00 00 03 is Visa and 10 10 its credit and debit app. Mastercard\'s is A0 00 00 00 04 10 10 and RuPay\'s A0 00 00 05 24 10 10.', reply: 'details of the app, including the list of things it wants to know before it starts (the PDOL)' },
+    { name: 'GET PROCESSING OPTIONS', bytes: '80 A8 00 00 0E 83 0C 00 00 00 02 50 00 03 56 1A 2B 3C 4D 00', data: '83 0C means "12 bytes of answers follow". Then the answers to the card\'s list, values only, in the order it asked: amount 00 00 00 02 50 00, currency 03 56, a random number 1A 2B 3C 4D. (Simplified: real cards ask for a few more things.)', reply: 'which records to read, and on many contactless cards the cryptogram straight away' },
+    { name: 'READ RECORD', bytes: '00 B2 01 0C 00', data: 'This command carries no data.', reply: 'card data such as the card number, the expiry date and the certificates' },
+    { name: 'GENERATE AC', bytes: '80 AE 80 00 1D … 00', data: 'The transaction details the card asked for, shortened here. P1 = 80 asks for an ARQC: "make a cryptogram for your bank to check online".', reply: 'the cryptogram and the tap counter, which end up in field 55 of the message to the bank' },
+  ];
+  const AMEAN = {
+    CLA: 'Class. 00 is a standard command; 80 is one defined for payment cards.',
+    INS: 'Instruction: which command. A4 select, A8 get processing options, B2 read record, AE generate a cryptogram.',
+    P1: 'Parameter 1. Its meaning depends on the command: for SELECT, 04 means "select by name"; for READ RECORD, the record number; for GENERATE AC, which kind of cryptogram.',
+    P2: 'Parameter 2. For READ RECORD it names the file the record is in.',
+    Lc: 'How many data bytes follow. In hex: 0E is 14.',
+    Data: '',
+    Le: 'How many bytes the terminal expects back. 00 means "as many as you have".',
+  };
+  function apduWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { i: 0, part: 'INS' };
+    const st = state[key];
+    function draw() {
+      const a = APDUS[st.i], b = a.bytes.split(' ');
+      node.innerHTML = ''; node.className = 'bitsbox apdu';
+      const pick = el('div', 'wrow');
+      APDUS.forEach((x, i) => pick.append(btn((i + 1) + '. ' + x.name, i === st.i ? 'primary' : '', () => { st.i = i; if (st.part === 'Data' || st.part === 'Lc') st.part = 'INS'; draw(); })));
+      node.append(pick);
+      const row = el('div', 'apbytes'), hasData = b.length > 5;
+      b.forEach((v, i) => {
+        const p = i < 4 ? ['CLA', 'INS', 'P1', 'P2'][i] : i === b.length - 1 ? 'Le' : i === 4 && hasData ? 'Lc' : 'Data';
+        const c = el('button', 'apb ap-' + p.toLowerCase() + (st.part === p ? ' sel' : ''), '<span>' + esc(v) + '</span><small>' + p + '</small>');
+        c.type = 'button'; c.addEventListener('click', () => { st.part = p; draw(); });
+        row.append(c);
+      });
+      node.append(el('div', 'cnlabel', 'The terminal sends these bytes to the card. Tap any of them.'), row);
+      let text = st.part === 'Data' ? a.data : AMEAN[st.part];
+      if (st.i === 3 && st.part === 'P1') text = 'Parameter 1: the record number, 01.';
+      if (st.i === 3 && st.part === 'P2') text = 'Parameter 2: 0C names the file. 0C is 00001 100 in binary: the first five switches say file 1, the last three (100) say "P1 is a record number".';
+      if (st.i === 4 && st.part === 'Lc') text = 'How many data bytes follow: 1D is 29.';
+      node.append(el('div', 'isoinfo', '<div class="flowtitle">' + esc(st.part) + '</div><div>' + esc(text) + '</div>'));
+      node.append(el('div', 'stepnote', '<b>The card answers with</b> ' + esc(a.reply) + ', and then two status bytes. <b>90 00</b> means "done". <b>6A 82</b> means "I have no such app or file".'));
+    }
+    draw();
+  }
+
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget };
 
   window.Lab = {
     marks: marksApi,
