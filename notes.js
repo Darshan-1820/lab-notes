@@ -1262,6 +1262,28 @@ int move = keys.nextInt();</pre>
 </table></div>
 <p>That is the point of the experiment: no single run can show that a program is random. Only <b>comparing several runs</b> can. The same idea is used to test real systems that involve randomness, like the random number in every card tap.</p>
 
+<h3>Why the three fights are identical, step by step</h3>
+<p><b>Try it first.</b> This is your lesson 9 fight, run three times, using Java's exact dice formula. With <code>new Random(7)</code> it prints exactly what your own Game.java printed with seed 7: Round 1, hero hits for 20, monster hits for 10, and so on. Switch between the two lines and press "Run three times again".</p>
+<div data-widget="threeruns" data-key="q-three-runs"></div>
+<p>Now the reason, as a chain. Each link follows from the one before it.</p>
+<ol>
+<li><b>Your program has no chance in it of its own.</b> Everything else in Game.java is fixed: the starting HP, the order of the lines, the rules. The only thing that can differ between two runs is the numbers the dice hands back.</li>
+<li><b>The dice is not chance either: it is a formula.</b> As the seed machine in the Random concept note shows, each roll is "take the secret number, multiply, add, keep 48 switches, cut it down with %". A formula always gives the same answer for the same input, like 6 × 7 is always 42.</li>
+<li><b>The first secret number comes from the seed.</b> <code>new Random(7)</code> means "start from 7". So in every run the machine starts in exactly the same state.</li>
+<li><b>Same start, same formula, so the same chain.</b> Same first secret number, so the same first roll (20). The formula turns the same number into the same next number, so the same second roll (10). And so on, for every roll, in every run.</li>
+<li><b>Same rolls, so the same fight.</b> Same damage each round, so the same HP after each hit, the same number of rounds, the same winner. Every printed line is the same.</li>
+</ol>
+<p>So "identical" is not a coincidence that might go away if you run it more often. It is guaranteed: run it a thousand times, on any computer in the world, and seed 7 gives this fight.</p>
+
+<h3>Then why does <code>new Random()</code> give a different fight each time?</h3>
+<p>Because the chain starts somewhere new. With empty brackets, Java makes up the seed itself, from two things that change all the time:</p>
+<ul>
+<li>the computer's clock, counted in <b>billionths of a second</b> (<code>System.nanoTime()</code>). Two runs of your program never start in the same billionth of a second;</li>
+<li>a counter that changes every time any <code>Random</code> is built, so even two dice made in the same instant get different seeds.</li>
+</ul>
+<p>Different seed, different first secret number, and from there every roll can differ. That is what the "new Random()" button above does: it builds each run's seed the same way. (This is from Java's own source code, the <code>Random()</code> constructor in <code>Random.java</code>.)</p>
+<p><b>A useful picture:</b> the formula is a very long, fixed list of numbers, the same on every computer. The seed only chooses <b>where on the list you start reading</b>. Seed 7 always starts at the same place. <code>new Random()</code> starts at a place picked by the clock.</p>
+
 <h3>Why you saw no failure</h3>
 <p>Two likely reasons, and the first one is the app's fault:</p>
 <ol>

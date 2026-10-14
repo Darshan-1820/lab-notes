@@ -38,6 +38,7 @@
 //   money     an amount stored as double / paise / DECIMAL / card-message field, and a running total (data-start)
 //   iso8583   a card authorisation request and answer: message type, bitmap, fields, chip data (TLV)
 //   apdu      the commands a terminal sends to a chip card, byte by byte
+//   threeruns  the lesson 9 fight run three times with Java's exact Random: seed 7 vs new Random()
 //   seedmachine  java.util.Random with Java's exact formula, one roll at a time (data-seed, data-n, data-k)
 
 (function () {
@@ -230,6 +231,14 @@
   .apb.sel { background: var(--panel); outline: 2px solid var(--text); }
   .apdu .wrow button { font-size: 13.5px; padding: 6px 10px; }
   .later { display: inline-block; margin-top: 4px; font-size: 12.5px; font-weight: 600; padding: 1px 9px; border-radius: 99px; border: 1px dashed var(--blue); color: var(--blue); }
+  .runcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+  .runcol { border: 1px solid var(--line); border-radius: 8px; padding: 6px; min-width: 0; }
+  .runhead { font-weight: 700; font-size: 14px; }
+  .runline { font: 12px/1.45 var(--mono, Consolas, monospace); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .runline.diff { background: color-mix(in srgb, var(--warn) 22%, transparent); border-radius: 3px; }
+  .bitsbox .summary { margin-top: 12px; padding: 8px 12px; border-radius: 8px; font-weight: 600; border: 1px solid var(--line); }
+  .bitsbox .summary.ok { color: var(--accent); }
+  .bitsbox .summary.no { color: var(--bad); border-color: var(--bad); }
   .ladder .lrow { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--line); }
   .ladder .lstate { font: 600 10.5px var(--mono, Consolas, monospace); letter-spacing: .5px; text-transform: uppercase; text-align: center; border-radius: 99px; padding: 2px 0; border: 1px solid var(--line); color: var(--dim); }
   .ladder .lstate.done { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
@@ -1447,7 +1456,63 @@
     start();
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget };
+
+  // ---- the lesson 9 fight run three times, with Java's exact Random: <div data-widget="threeruns" data-key> ----
+  // Seed 7 reproduces his own Game.java run with new Random(7) line for line (checked 2026-10-15).
+  function threeRunsWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { mode: 'seed', runs: null };
+    const st = state[key];
+    const MASK = (1n << 48n) - 1n, MULT = 0x5DEECE66Dn, ADD = 0xBn;
+    function fight(seed) {
+      let s = (seed ^ MULT) & MASK;
+      const next = () => { s = (s * MULT + ADD) & MASK; return Number(s >> 17n); };
+      const nextInt = (b) => { let r = next(); const m = b - 1; for (let u = r; u - (r = u % b) + m > 2147483647; u = next()); return r; };
+      let h = 100, m = 100; const lines = [];
+      for (let round = 1; h > 0 && m > 0 && round < 60; round++) {
+        lines.push('Round ' + round);
+        const d = nextInt(21) + 10; m -= d; lines.push('Hero hits for ' + d, 'Monster HP: ' + Math.max(0, m));
+        if (m > 0) { const e = nextInt(21) + 5; h -= e; lines.push('Monster hits for ' + e, 'Hero HP: ' + Math.max(0, h)); }
+      }
+      lines.push(m <= 0 ? 'You win!' : 'You lose.');
+      return { seed, lines };
+    }
+    let counter = 8682522807148012n;
+    function clockSeed() {   // what new Random() does: a changing counter mixed with a clock in billionths of a second
+      counter = (counter * 1181783497276652981n) & ((1n << 64n) - 1n);
+      const nano = BigInt(Math.floor(performance.now() * 1e6)) + BigInt(Date.now()) * 1000000n;
+      return (counter ^ nano) & ((1n << 63n) - 1n);
+    }
+    function run() { st.runs = [0, 1, 2].map(() => fight(st.mode === 'seed' ? 7n : clockSeed())); draw(); }
+    function draw() {
+      node.innerHTML = ''; node.className = 'bitsbox threeruns';
+      const row = el('div', 'wrow');
+      [['seed', 'new Random(7)'], ['clock', 'new Random()']].forEach(([id, label]) => {
+        const b = btn(label, st.mode === id ? 'primary' : '', () => { st.mode = id; run(); });
+        b.setAttribute('aria-pressed', st.mode === id ? 'true' : 'false'); b.classList.add('mono'); row.append(b);
+      });
+      node.append(el('div', 'cnlabel', 'Which line is in your program?'), row);
+      if (!st.runs) { run(); return; }
+      const cols = el('div', 'runcols');
+      const base = st.runs[0].lines;
+      st.runs.forEach((r, i) => {
+        const c = el('div', 'runcol');
+        c.append(el('div', 'runhead', 'Run ' + (i + 1)), el('div', 'worth', 'seed ' + (r.seed === 7n ? '7' : String(r.seed).slice(0, 6) + '…')));
+        r.lines.slice(0, 16).forEach((l, n) => c.append(el('div', 'runline' + (i > 0 && l !== base[n] ? ' diff' : ''), esc(l))));
+        if (r.lines.length > 16) c.append(el('div', 'worth', '… ' + (r.lines.length - 16) + ' more lines'));
+        cols.append(c);
+      });
+      node.append(cols);
+      const same = st.runs.every(r => r.lines.join('|') === base.join('|'));
+      node.append(el('div', 'summary ' + (same ? 'no' : 'ok'), same
+        ? 'All three runs are identical, line for line. Same seed, same rolls, same fight. "The three fights are not identical" fails.'
+        : 'The runs differ (lines that differ from run 1 are marked). Each run got its own seed from the clock.'));
+      const again = el('div', 'wrow'); again.append(btn('Run three times again', '', run)); node.append(again);
+    }
+    draw();
+  }
+
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget };
 
   window.Lab = {
     marks: marksApi,
