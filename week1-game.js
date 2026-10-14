@@ -49,13 +49,34 @@
   // Lines that are not part of the fight (a title, the "Your move" question) are ignored.
   // An HP that went below zero may be shown as it is or as 0.
   function fightProblem(r, o) {
-    const ev = r.lines.map(l => l.replace(/^Your move[^:]*:\s*/, '').trim()).filter(l => FIGHT_LINE.test(l));
+    // Lines the lab does not recognise are skipped, but remembered, so a near miss
+    // (an extra full stop, a capital letter) is named instead of silently hidden.
+    const ev = [], seenBefore = [];
+    let skipped = [];
+    r.lines.map(l => l.replace(/^Your move[^:]*:\s*/, '').trim()).filter(l => l !== '').forEach(l => {
+      if (FIGHT_LINE.test(l)) { ev.push(l); seenBefore.push(skipped); skipped = []; } else skipped.push(l);
+    });
+    seenBefore.push(skipped);
+    const nearMiss = (lines) => {
+      for (const l of lines) {
+        if (FIGHT_LINE.test(l.replace(/\.$/, ''))) return { line: l, why: 'it has a full stop at the end that the line should not have' };
+        if (FIGHT_LINE.test(l + '.')) return { line: l, why: 'it is missing the full stop at the end' };
+        const fixed = ev.concat(['Hero drinks a potion', 'No potions left.', 'Not a move.', 'The monster falls. You win!', 'The hero falls. You lose.']).find(x => x.toLowerCase() === l.toLowerCase());
+        if (fixed || /^(round|hero|monster)/i.test(l) && FIGHT_LINE.test(l.charAt(0).toUpperCase() + l.slice(1))) return { line: l, why: 'a capital letter is different' };
+        if (FIGHT_LINE.test(l.replace(/\s+/g, ' '))) return { line: l, why: 'it has extra spaces' };
+      }
+      return null;
+    };
+    const missed = (what) => {
+      const nm = nearMiss(seenBefore[at] || []);
+      return nm ? where() + 'expected ' + what + '. Your program printed "' + nm.line + '" there, which the lab does not count, because ' + nm.why + '. The lab compares lines exactly, letter for letter, including full stops.' : '';
+    };
     let at = 0, round = 0;
     const where = () => (round ? 'In round ' + round + ': ' : 'Before round 1: ');
     const take = (re, what) => {
-      if (at >= ev.length) return { bad: where() + 'the output ended, but ' + what + ' should come next.' };
+      if (at >= ev.length) return { bad: missed(what) || where() + 'the output ended, but ' + what + ' should come next.' };
       const mt = ev[at].match(re);
-      if (!mt) return { bad: where() + 'expected ' + what + ', but the next line is "' + ev[at] + '".' };
+      if (!mt) return { bad: missed(what) || where() + 'expected ' + what + ', but the next line is "' + ev[at] + '".' };
       at++;
       return { n: mt[1] === undefined ? 0 : Number(mt[1]) };
     };
@@ -546,7 +567,7 @@
               { name: 'Game 3: a move that does not exist', stdin: ['1', '7', '1', '0'].concat(Array(80).fill('1')).join('\n') + '\n' },
               { name: 'Game 4: potions only, never attack', stdin: Array(300).fill('2').join('\n') + '\n' },
             ],
-            html: 'Let the player choose each round.<ul><li>Both fighters start with <b>100</b> HP. The hero has <b>3 potions</b>.</li><li>Each round, print <code>Round N</code>, then print the question <code>Your move (1 = attack, 2 = potion):</code> with <code>println</code>, then read a number.</li><li><b>1:</b> the hero hits for a roll of 10 to 30, as before.</li><li><b>2:</b> if a potion is left, print <code>Hero drinks a potion</code>, add <b>30</b> to the hero\'s HP but never above <b>100</b>, and print the hero\'s HP. If none is left, print <code>No potions left.</code></li><li><b>Anything else:</b> print <code>Not a move.</code></li><li>Then, if the monster is still alive, it hits for a roll of 5 to 25, as before. A wasted turn still gets hit.</li><li>The endings stay the same.</li></ul>A round where the hero drinks looks like this:<pre>Round 2\nYour move (1 = attack, 2 = potion):\nHero drinks a potion\nHero HP: 100\nMonster hits for 12\nHero HP: 88</pre>',
+            html: 'Let the player choose each round.<ul><li>Both fighters start with <b>100</b> HP. The hero has <b>3 potions</b>.</li><li>Each round, print <code>Round N</code>, then print the question <code>Your move (1 = attack, 2 = potion):</code> with <code>println</code>, then read a number.</li><li><b>1:</b> the hero hits for a roll of 10 to 30, as before.</li><li><b>2:</b> if a potion is left, print <code>Hero drinks a potion</code> (no full stop on this line, unlike <code>No potions left.</code> and <code>Not a move.</code>, which end with one), add <b>30</b> to the hero\'s HP but never above <b>100</b>, and print the hero\'s HP. If none is left, print <code>No potions left.</code></li><li><b>Anything else:</b> print <code>Not a move.</code></li><li>Then, if the monster is still alive, it hits for a roll of 5 to 25, as before. A wasted turn still gets hit.</li><li>The endings stay the same.</li></ul>A round where the hero drinks looks like this:<pre>Round 2\nYour move (1 = attack, 2 = potion):\nHero drinks a potion\nHero HP: 100\nMonster hits for 12\nHero HP: 88</pre>',
             checks: [
               { label: 'The program stops by itself', test: r => !r.timedOut },
               { label: 'The program runs without errors', test: r => r.ok, why: r => /NoSuchElementException/.test(r.stderr) ? 'Your program asked for more moves than a whole game needs. Does the loop stop when someone falls?' : '' },
