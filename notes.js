@@ -1246,6 +1246,31 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'seed7-no-fail',
+    date: '2026-10-15',
+    title: 'With new Random(7), why did no check fail?',
+    from: 'Week 1, lesson 9: Roll the dice',
+    asked: 'Break the randomness. Change new Random() to new Random(7) and press Run three times. Compare the fights. Then press "Run and check" above and read which check fails. None of the checks failed.',
+    html: `
+<h3>What should have happened</h3>
+<p>With <code>new Random(7)</code> the dice machine starts from the same secret number every time, so it rolls the same numbers in the same order every time (the seed machine in the Random concept note shows this: seed 7 always gives 20, 15, 28). So all three fights come out <b>exactly the same</b>, line for line. Your tutor ran your own Game.java with seed 7 three times: the three outputs were identical.</p>
+<p>The lesson runs your program three times and checks two kinds of things:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Kind of check</th><th>With seed 7</th></tr>
+<tr><td>Each fight on its own: follows the rules, rolls inside the ranges, hero rolls again each round</td><td><span class="yes">passes</span>. One fight with seed 7 is a perfectly legal fight.</td></tr>
+<tr><td>The three fights compared: "The three fights are not identical"</td><td><span class="bad">fails</span>. They are identical.</td></tr>
+</table></div>
+<p>That is the point of the experiment: no single run can show that a program is random. Only <b>comparing several runs</b> can. The same idea is used to test real systems that involve randomness, like the random number in every card tap.</p>
+
+<h3>Why you saw no failure</h3>
+<p>Two likely reasons, and the first one is the app's fault:</p>
+<ol>
+<li><b>The failing check was hidden at the bottom.</b> The page listed Fight 1, Fight 2 and Fight 3, each with every check ticked, and only below those, under "Comparing the runs", the one cross. Easy to miss. This is fixed: the results now start with one line that says either "Every check passed" or, in red, exactly which check failed.</li>
+<li><b>The file was not saved.</b> The lab runs the file as it is on disk. If <code>Random(7)</code> was typed but not saved with Ctrl + S, the program that ran still had <code>new Random()</code>, and every check really did pass. (The lesson text also said "Run and check", but after passing, that button is called "Run again". The text now says both.)</li>
+</ol>
+<p><b>Try it again:</b> change it to <code>new Random(7)</code>, save, press "Run again", and read the line at the top. Then put it back to <code>new Random()</code> and save.</p>`,
+  },
+  {
     id: 'dice-max-50',
     date: '2026-10-15',
     title: 'nextInt(50) + 1: is the largest 40 or 50?',
