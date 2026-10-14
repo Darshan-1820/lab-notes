@@ -38,6 +38,7 @@
 //   money     an amount stored as double / paise / DECIMAL / card-message field, and a running total (data-start)
 //   iso8583   a card authorisation request and answer: message type, bitmap, fields, chip data (TLV)
 //   apdu      the commands a terminal sends to a chip card, byte by byte
+//   seedmachine  java.util.Random with Java's exact formula, one roll at a time (data-seed, data-n, data-k)
 
 (function () {
   const state = {};   // widget positions, kept while the page stays open
@@ -1395,7 +1396,58 @@
     draw();
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget };
+
+  // ---- java.util.Random, step by step, with Java's real formula: <div data-widget="seedmachine" data-key data-seed data-n data-k> ----
+  // Matches Java exactly (checked: new Random(7), nextInt(21) + 10 gives 20, 15, 28; seed 42 with bounds 16 and 50 too).
+  function seedMachineWidget(node) {
+    const key = node.dataset.key;
+    const MASK = (1n << 48n) - 1n, MULT = 0x5DEECE66Dn, ADD = 0xBn;
+    if (!state[key]) state[key] = { seed: Number(node.dataset.seed || 7), n: Number(node.dataset.n || 21), k: Number(node.dataset.k || 10) };
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox seedm';
+    const line = el('div', 'wline');
+    const mk = (v, label, w) => { const i = el('input'); i.type = 'number'; i.value = v; i.setAttribute('aria-label', label); i.style.width = w; return i; };
+    const si = mk(st.seed, 'Seed', '110px'), ni = mk(st.n, 'How many values', '80px'), ki = mk(st.k, 'Add', '80px');
+    line.append(el('span', '', 'new Random('), si, el('span', '', ')  then  nextInt('), ni, el('span', '', ') +'), ki);
+    const out = el('div'), rolls = el('div', 'patgrid'), msg = el('div', 'bitmsg');
+    let s = 0n, seen = [];
+    function start() {
+      st.seed = Math.trunc(Number(si.value) || 0); st.n = Math.trunc(Number(ni.value)); st.k = Math.trunc(Number(ki.value) || 0);
+      s = (BigInt(st.seed) ^ MULT) & MASK; seen = [];
+      out.innerHTML = '<div class="stepnote">The machine is built. Its secret number is now <b>' + s + '</b>: your seed, mixed once with a fixed number. Press Roll.</div>';
+      rolls.innerHTML = ''; msg.textContent = st.n >= 1 && st.n <= 1000000 ? '' : 'Pick between 1 and 1,000,000 values. (Java itself would stop with an error for 0 or less.)';
+    }
+    function next31() { const before = s; s = (s * MULT + ADD) & MASK; return { before, after: s, r: Number(s >> 17n) }; }
+    function roll() {
+      if (!(st.n >= 1 && st.n <= 1000000)) return;
+      const b = st.n, m = b - 1, tries = [];
+      let t = next31(), r, way;
+      tries.push(t);
+      if ((b & m) === 0) { r = Number((BigInt(b) * BigInt(t.r)) >> 31n); way = b + ' is a power of 2, so Java takes the top part of the number instead of the remainder: ' + r + '.'; }
+      else {
+        let u = t.r;
+        while (u - (r = u % b) + m > 2147483647) { t = next31(); tries.push(t); u = t.r; }
+        way = fmt(t.r) + ' % ' + b + ' = <b>' + r + '</b>, the remainder after dividing by ' + b + ', which is always 0 to ' + m + '.' + (tries.length > 1 ? ' (The first number was thrown away: it came from the small uneven bit at the very top of the range, so Java took the next one. This keeps every value equally likely.)' : '');
+      }
+      const result = r + st.k; seen.push(result);
+      const last = tries[tries.length - 1];
+      out.innerHTML = '<div class="meanings">'
+        + '<div>1. Secret number before: <b>' + last.before + '</b></div>'
+        + '<div>2. Multiply by 25,214,903,917, add 11, keep only the last 48 switches: <b>' + last.after + '</b>. This becomes the new secret number, used next time.</div>'
+        + '<div>3. Take its top 31 switches as a whole number: <b>' + fmt(last.r) + '</b></div>'
+        + '<div>4. Cut it down to the size you asked for: ' + way + '</div>'
+        + '<div>5. Your code adds ' + st.k + ': <b>' + result + '</b>. That is what <code>dice.nextInt(' + b + ') + ' + st.k + '</code> hands back.</div></div>';
+      rolls.innerHTML = '';
+      seen.forEach((v, i) => rolls.append(el('span', 'patchip' + (i === seen.length - 1 ? ' hi' : ''), String(v))));
+    }
+    [si, ni, ki].forEach(i => i.addEventListener('input', start));
+    const row = el('div', 'wrow');
+    row.append(btn('Roll', 'primary', roll), btn('Start again with this seed', '', start));
+    node.append(line, row, out, el('div', 'cnlabel', 'Rolls so far'), rolls, msg);
+    start();
+  }
+
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget };
 
   window.Lab = {
     marks: marksApi,

@@ -628,7 +628,46 @@ int damage = dice.nextInt(21) + 10;</pre>
 <tr><td><code>dice.nextDouble()</code></td><td>a decimal from 0.0 up to, but not including, 1.0</td></tr>
 </table></div>
 <p>Damage is a whole number, so <code>nextInt</code> is the one that fits.</p>
-<p><b>What "random" means here.</b> Random means you cannot know the result before it happens, like a real dice. A computer cannot do that: it only follows instructions. So the dice machine keeps one big secret number inside it (the seed). Every call to <code>nextInt</code> pushes that number through a fixed scrambling formula, keeps the new number for next time, and gives you a piece of it, cut down with the remainder <code>%</code> to the size you asked for. That is the last section of this note, "Why it is called pseudo-random".</p>
+<p><b>What "random" means here.</b> Random means you cannot know the result before it happens, like a real dice. A computer cannot do that: it only follows instructions. So the dice machine keeps one big secret number inside it (the seed). Every call to <code>nextInt</code> pushes that number through a fixed scrambling formula, keeps the new number for next time, and gives you a piece of it, cut down with the remainder <code>%</code> to the size you asked for. The section "Inside Random" below shows it step by step, with Java's real formula.</p>
+
+<h3>What is java.util.Random?</h3>
+<p>Java comes with thousands of classes already written: tools for text, dates, files, networks, lists, random numbers. Together they are called the <b>Java standard library</b>, and they were installed on your computer with Java itself. Nobody writes their own dice machine; you use the one in the library.</p>
+<p>Thousands of tools need some order, so they are sorted into <b>packages</b>. A package is like a folder with a name.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Part of the name</th><th>Means</th></tr>
+<tr><td><code>java</code></td><td>The top folder: part of Java itself, not something someone else made</td></tr>
+<tr><td><code>java.util</code></td><td>The "utilities" folder: small general tools. <code>Random</code> and <code>Scanner</code> live here, and later <code>ArrayList</code> and <code>HashMap</code>.</td></tr>
+<tr><td><code>java.util.Random</code></td><td>The full name of the class: the <code>Random</code> in the <code>java.util</code> folder</td></tr>
+</table></div>
+<p>It really is a folder. Inside your Java installation there is a file <code>lib/src.zip</code>, and in it <code>java.base/java/util/Random.java</code>: the real source code, 947 lines, written by Java's makers. The next section shows the important part of it.</p>
+
+<h3>What the import line does</h3>
+<pre>import java.util.Random;</pre>
+<p>It is a <b>name shortcut</b>, nothing more. It tells Java: "in this file, when I write <code>Random</code>, I mean <code>java.util.Random</code>." Without it, you could still use the class by writing its full name every time. This works, with no import line at all:</p>
+<pre>java.util.Random dice = new java.util.Random();</pre>
+<p>With neither the import nor the full name, Java does not know which <code>Random</code> you mean, and stops with:</p>
+<pre>error: cannot find symbol
+  symbol:   class Random</pre>
+<p>(Both were run in Java before going into this note.) Things that import does <b>not</b> do: it does not copy any code into your file, and it does not make your program bigger or slower. It only saves typing.</p>
+<p><b>Why does <code>System</code> not need an import?</b> <code>System</code> and <code>String</code> live in the package <code>java.lang</code> ("language"), and Java imports that one into every file automatically, because almost every program needs it. Everything else, you import.</p>
+<p><b>Where to look up what a class can do.</b> Every class in the library has an official page listing all its methods: for this one, search "Java 17 Random" and open the docs.oracle.com page. It lists <code>nextInt</code>, <code>nextBoolean</code>, <code>nextDouble</code> and the rest, each with a line on what it returns. Reading these pages is a skill every Java developer uses daily; you will start doing it in week 2. <span class="later">Coming in weeks 4 to 5: making your own packages, when your programs grow past one file</span></p>
+
+<h3>Inside Random: what nextInt really does</h3>
+<p>This is the real formula from <code>Random.java</code>, written in plain steps. The machine keeps one secret number inside it.</p>
+<ol>
+<li><b>When you build it</b> (<code>new Random(7)</code>), the secret number starts from your seed, mixed once with a fixed number. With plain <code>new Random()</code>, Java makes up a seed from the clock.</li>
+<li><b>Every roll</b>, the secret number is multiplied by 25,214,903,917, then 11 is added, and only the last 48 switches of the answer are kept. That is the new secret number.</li>
+<li>The top 31 switches of it are read as a whole number, somewhere from 0 to about 2.1 billion.</li>
+<li><code>nextInt(21)</code> cuts that down with the remainder: the number <code>% 21</code> is always 0 to 20. You know <code>%</code> from lesson 3.</li>
+</ol>
+<p><b>Try it.</b> This machine uses Java's exact formula. With seed 7, <code>nextInt(21) + 10</code> gives 20, then 15, then 28, the same as Java on any computer. Roll and follow each step. Then change the seed.</p>
+<div data-widget="seedmachine" data-key="c8-seed" data-seed="7" data-n="21" data-k="10"></div>
+<p>Two details you will see in the machine:</p>
+<ul>
+<li><b>Fairness.</b> 2.1 billion does not divide evenly by 21, so the last few numbers at the very top would give the small results one extra chance. Java throws those rare numbers away and takes the next one. It almost never happens, but it keeps every value equally likely.</li>
+<li><b>Powers of 2.</b> For 2, 4, 8, 16 and so on, Java uses a faster trick that takes the top switches instead of the remainder. Try 16.</li>
+</ul>
+<p>The real code is written with symbols you have not met yet (<code>long</code>, <code>&amp;</code>, <code>&gt;&gt;&gt;</code>, <code>private static final</code>), so it is described here in steps rather than shown. <span class="later">Coming in week 2: long</span> <span class="later">Coming in week 3: working with switches (&amp;, &gt;&gt;, &gt;&gt;&gt;) when you decode card bytes</span> <span class="later">Coming in weeks 4 to 5: static and final</span></p>
 
 <h3>The recipe for a range</h3>
 <p><code>nextInt(n)</code> gives one of n numbers and starts at zero: 0 up to n - 1. It never gives n itself.</p>
