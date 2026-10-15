@@ -1246,6 +1246,54 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'roll-formula',
+    date: '2026-10-16',
+    title: 'The maths in dice.nextInt(high - low + 1) + low',
+    from: 'Week 1, lesson 11: Give the moves names',
+    asked: 'Can you explain the math: return dice.nextInt(high - low + 1) + low;',
+    html: `
+<h3>Two questions, in this order</h3>
+<p>The line answers two questions, one after the other:</p>
+<ol><li><b>How many different numbers do I want?</b> That is <code>high - low + 1</code>.</li>
+<li><b>Where should they start?</b> That is <code>+ low</code>.</li></ol>
+<p><code>nextInt(n)</code> already gives you the right <i>count</i>: n numbers, from 0 to n - 1. It always starts at 0. Adding <code>low</code> slides all of them up so they start where you want.</p>
+
+<h3>Walk through it for a real die: low = 1, high = 6</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Piece</th><th>Works out to</th><th>Why</th></tr>
+<tr><td><code>high - low</code></td><td>6 - 1 = 5</td><td>the <b>gap</b> between the two ends</td></tr>
+<tr><td><code>+ 1</code></td><td>5 + 1 = 6</td><td>the <b>count</b> of numbers: 1, 2, 3, 4, 5, 6 is six numbers</td></tr>
+<tr><td><code>dice.nextInt(6)</code></td><td>0, 1, 2, 3, 4 or 5</td><td>six numbers, but starting at 0</td></tr>
+<tr><td><code>+ low</code></td><td>1, 2, 3, 4, 5 or 6</td><td>every one moved up by 1</td></tr>
+</table></div>
+
+<h3>Why the + 1? Fence posts</h3>
+<p>A fence 5 metres long with a post every metre has <b>6</b> posts, not 5: one at 0 m and one at 5 m, plus the four in between. Subtracting gives the number of <b>gaps</b>. You want the number of <b>posts</b>, and when both ends count, that is always one more.</p>
+<pre>  1 --- 2 --- 3 --- 4 --- 5 --- 6
+  posts: 6        gaps: 5 = 6 - 1</pre>
+<p>Forgetting this + 1 has a name: an <b>off-by-one</b> error. It is one of the most common bugs in all of programming, at every level.</p>
+
+<h3>Your fight, with your own numbers</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Who</th><th>low to high</th><th>high - low + 1</th><th>So roll(dice, low, high) does</th></tr>
+<tr><td>Hero</td><td>10 to 30</td><td>30 - 10 + 1 = 21</td><td><code>dice.nextInt(21) + 10</code></td></tr>
+<tr><td>Monster</td><td>5 to 25</td><td>25 - 5 + 1 = 21</td><td><code>dice.nextInt(21) + 5</code></td></tr>
+</table></div>
+<p>Those are exactly the two lines already in your Game.java. The method does the same sum, once, for any low and high.</p>
+
+<h3>See the bug: leave out the + 1</h3>
+<p>Here is <code>dice.nextInt(5) + 1</code>, the version without the + 1. Roll it 100 times and look for a 6.</p>
+<div data-widget="dice" data-key="q-roll-bug" data-n="5" data-k="1"></div>
+<p>There is none, ever. The program still runs and looks fine, which is why this bug survives: the largest value simply never comes up. Now the correct one:</p>
+<div data-widget="dice" data-key="q-roll-ok" data-n="6" data-k="1"></div>
+
+<h3>Check yourself</h3>
+<ol><li>You want 50 to 59. What goes inside <code>nextInt( )</code>, and what do you add?</li>
+<li>Someone writes <code>dice.nextInt(high - low) + low</code> for 10 to 30. Which single number can never appear?</li>
+<li>What does <code>roll(dice, 7, 7)</code> give back, and why?</li></ol>
+<p>Answers: 10 and + 50 (50 to 59 is ten numbers). 30. Always 7: 7 - 7 + 1 = 1, and nextInt(1) can only give 0.</p>`,
+  },
+  {
     id: 'no-input-error',
     date: '2026-10-15',
     title: 'Reading the red message when nobody types',
