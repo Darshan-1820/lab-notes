@@ -1287,6 +1287,17 @@ int move = keys.nextInt();</pre>
 <p>There is none, ever. The program still runs and looks fine, which is why this bug survives: the largest value simply never comes up. Now the correct one:</p>
 <div data-widget="dice" data-key="q-roll-ok" data-n="6" data-k="1"></div>
 
+<h3>How you could find this formula yourself</h3>
+<p>Nobody "sees" a formula like this out of thin air. You build it from examples you already understand:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>low</th><th>high</th><th>You already wrote</th></tr>
+<tr><td>10</td><td>30</td><td><code>nextInt(21) + 10</code></td></tr>
+<tr><td>5</td><td>25</td><td><code>nextInt(21) + 5</code></td></tr>
+<tr><td>1</td><td>6</td><td><code>nextInt(6) + 1</code></td></tr>
+</table></div>
+<p>Now ask two questions of the table. <b>The number added at the end: where does it come from?</b> It is always <code>low</code>. <b>The number inside nextInt: how does it relate to low and high?</b> 21 = 30 - 10 + 1, 21 = 25 - 5 + 1, 6 = 6 - 1 + 1. The same pattern every time, so swap the numbers for their names. That is all a formula is: the pattern your examples share, written with names.</p>
+<p><b>The habit:</b> stuck on a general rule? Do three concrete cases by hand, put them in a table, and look for what changes and what stays the same.</p>
+
 <h3>Check yourself</h3>
 <ol><li>You want 50 to 59. What goes inside <code>nextInt( )</code>, and what do you add?</li>
 <li>Someone writes <code>dice.nextInt(high - low) + low</code> for 10 to 30. Which single number can never appear?</li>
