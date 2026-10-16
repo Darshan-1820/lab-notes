@@ -3,55 +3,52 @@
 // A target with "missions" is ticked automatically in the lab when those missions are passed.
 
 window.PLAN = {
-  updated: '2026-10-15',
-  // 15 Oct, 03:10: lessons 8 to 10 passed (0 hints); a review of the night was added (review, below).
-  // 15 Oct: he asked "how far am I from OOP and DSA?" and said he will finish lessons 8 to 12 in one go.
-  // The plan was pulled forward again, and a "where you are" map was added (position, below).
+  updated: '2026-10-16',
+  // 16 Oct, 08:23 IST: lessons 11 and 12 passed, week 1 finished. Review rewritten; targets moved to
+  // week 2; Rematch 1 (missions/rematches.js) opens Sat 17.
   // The tutor's review of the last session, shown first on the plan page.
   review: {
-    title: 'Review of your session, early Thursday 15 October',
-    when: 'Thursday morning, about 00:50 to 03:10. Lessons 8, 9 and 10 passed. 770 XP.',
+    title: 'Review: week 1 finished, Friday 16 October',
+    when: 'Friday early morning. Lesson 11 passed first try, lesson 12 (the shop) passed with the bonus. All 12 lessons of week 1, zero hints, 1030 XP.',
     points: [
-      { label: 'What went well', text: 'Three lessons, zero hints, every one passed by your own fixes (3, 3 and 5 attempts). Your lesson 8 prediction (-1 3) was right. And your questions were the best part of the night: your "largest 40" mark found a real bug in the lab, and asking "why are the fights identical?" and "please explain the red message" pushed the notes to explain things properly. Keep marking anything that does not add up. You are often right.' },
-      { label: 'The one habit to build', text: 'Exact output. Three of your five lesson 10 attempts failed on one full stop, and in lesson 7 four attempts failed on System.err in place of System.out. The logic was right both times. The habit: when a check fails on text, put the expected line from the task next to yours and compare them letter by letter, before you change any logic. Computers that talk to each other, like a terminal and a bank, compare messages exactly too, so this habit is worth a lot later.' },
-      { label: 'Reading errors', text: 'Tonight you met your first stack trace on purpose. The rule from the note: read the exception name like a sentence, then go down to the first "at" line that names your file. Use it the next time a program of yours stops with red text.' },
-      { label: 'The fast track', text: 'On track: lessons 8 to 10 with no hints. Lessons 11 (methods, your first functions) and 12 (the shop challenge) are tonight, Thursday 15, which finishes everything set for the 15th. Then the rematch, on a later day than lesson 12, decides whether week 2 runs at two lessons a night.' },
-      { label: 'Before you sleep', text: 'Write one line in journal.md: what you did and one thing that confused you. It takes a minute and it is how the tutor knows what to explain next. And try to stop by 1 am on lesson nights: memory of what you practised is laid down while you sleep, so late nights cost you some of what you learned that night.' },
+      { label: 'What went well', text: 'Lesson 11 on the first attempt: roll and heal written, both used, one nextInt left. And you worked out the roll formula yourself from your own numbers (30 - 10 + 1 = 21). The shop logic was right from attempt 1: canAfford, the count and the bonus maximum all worked.' },
+      { label: 'What the shop taught', text: 'Attempts 1 to 4 failed on two things, neither of them the logic. A new Scanner made inside the loop works when you type, but breaks when all the input arrives at once (note: "Works when I type, fails in the checks"). And "Most Expensive" with a capital E. That is the exact-output habit again, for the third lesson in a row: put the expected line next to yours and compare letter by letter before changing anything.' },
+      { label: 'Honest scoring', text: 'The challenge took about 34 minutes against a 25 minute target, and the Scanner fix came after the tutor explained the failure, so it counts as passed, not as unaided. That is fine: it is exactly what the rematch is for.' },
+      { label: 'One thing in Game.java', text: 'You wrote roll(Random dice, int high, int low) and call it roll(dice, 30, 10). It works, because you were consistent. But the task and almost every Java library put the low end first (low, high), so anyone else calling your method would get it backwards. Order your parameters the way readers expect.' },
+      { label: 'Next', text: 'Rematch 1 opens on Saturday 17: a new problem, alone, no AI, no notes. Week 2 (the money tool) is open now and does not wait for it. Before you sleep: one line in journal.md.' },
     ],
   },
   week: {
     title: 'Week 1: 12 to 18 October',
-    goal: 'Finish the Arena in one go: the monster hits back, dice decide, you choose the moves, and the moves get names (methods, Java\'s word for functions). Then prove it with a rematch on a later day. On breaks, payments notes 2, 3 and 4. The days below are the latest, not a waiting line.',
+    goal: 'Week 1, the Arena, is finished: 12 lessons, zero hints. What is left this week is proof and a head start: Rematch 1 on a later day, then week 2, the money tool, at your pace. On breaks, payments notes 2, 3 and 4. The days below are the latest, not a waiting line.',
   },
   targets: [
     {
-      by: 'Done, early Thursday 15 (00:50 to 03:10)',
+      by: 'Done: week 1 (11 to 16 October)',
       items: [
-        { text: 'Lesson 8: The monster hits back (two conditions)', missions: ['w1m8'] },
-        { text: 'Lesson 9: Roll the dice (random numbers)', missions: ['w1m9'] },
-        { text: 'Lesson 10: Your move (reading what the player types)', missions: ['w1m10'] },
+        { text: 'Lessons 1 to 10: printing to reading what the player types', missions: ['w1m1', 'w1m2', 'w1m3', 'w1m4', 'w1m5', 'w1m6', 'w1m7', 'w1m8', 'w1m9', 'w1m10'] },
+        { text: 'Lesson 11: Give the moves names (methods)', missions: ['w1m11'] },
+        { text: 'Lesson 12: the shop challenge, with the bonus', missions: ['w1m12'] },
       ],
     },
     {
-      by: 'Tonight, Thursday 15',
+      by: 'Saturday 17 (opens that day, not before)',
       items: [
-        { text: 'Lesson 11: Give the moves names (methods, which other languages call functions)', missions: ['w1m11'] },
-        { text: 'Lesson 12: the second timed challenge, the shop. Use the five steps from "How to read a problem" first.', missions: ['w1m12'] },
+        { text: 'Rematch 1: level up. No hints, no AI, no notes. Do the five steps from "How to read a problem" first, and work List 2 out by hand.', missions: ['w1r1'] },
+      ],
+    },
+    {
+      by: 'Next evenings, any time from now',
+      items: [
+        { text: 'Week 2, lesson 1: Count it in paise (long, and money as whole paise)', missions: ['w2m1'] },
+        { text: 'Week 2, lessons 2 and 3: Tax to the nearest paisa, Money that grows', missions: ['w2m2', 'w2m3'] },
       ],
     },
     {
       by: 'On breaks, by Sunday 18',
       items: [
-        { text: 'Your marks are answered: open "Bits, bytes..." again. Sections 1a, 1b, 1c, 5 and 7 are new.' },
         { text: 'Payments note 2, then note 3 (the message the shop\'s bank sends) and note 4 (what the card and terminal say). Mark each as read and answer its check-yourself questions.' },
         { text: 'One maths drill a day: Maths 1 to level 2, then Maths 2, percentages. Week 2 uses percentages.' },
-      ],
-    },
-    {
-      by: 'By Sunday 18',
-      items: [
-        { text: 'Rematch: one new problem on variables, if and while, with no help, on a later day than the lessons. Passing it is what counts as mastered.' },
-        { text: 'Week 2, the money tool, opens when lesson 12 is passed. Its first lessons include 5 minutes of terminal and Git: from then on you save your own work.' },
         { text: 'Sunday: 15 minutes with the tutor to look at the week and set the next one.' },
       ],
     },
@@ -60,25 +57,25 @@ window.PLAN = {
   // Items with missions tick themselves in the lab when those missions are passed.
   position: {
     title: 'Where you are in Java',
-    summary: 'You passed lessons 1 to 7 in one night with no hints. That is real speed. It is not mastery yet: mastery is solving a fresh problem alone on a later day, which is what the rematch is for. Loops and if are the floor of programming. Interviews for backend jobs are decided by two things built on top of them: object-oriented design and problem solving (DSA). Both need methods and arrays first, and those are the next lessons.',
+    summary: 'Week 1 is finished: 12 lessons with no hints, in four evenings. That is real speed. It is not mastery yet: mastery is solving a fresh problem alone on a later day, which is what the rematch is for. Loops and if are the floor of programming. Interviews for backend jobs are decided by two things built on top of them: object-oriented design and problem solving (DSA). Both need methods and arrays first, and those are the next lessons.',
     distance: [
-      { to: 'Functions', how: '3 lessons away', what: 'Lesson 11. Java calls them methods. Week 2 then uses them properly: values in, a result out.' },
-      { to: 'Problem solving (DSA)', how: 'About 10 lessons away', what: 'Starts in week 3, once arrays are in (week 2). Then a short problem every day, for months.' },
-      { to: 'Object-oriented programming', how: 'About 17 lessons away', what: 'Weeks 4 to 5: the Arena comes back with Hero and Monster as objects. At your pace that is 2 to 3 weeks of evenings, not 5.' },
+      { to: 'Functions', how: 'Reached', what: 'Lesson 11: roll and heal. Week 2 uses them properly: values in, a result out.' },
+      { to: 'Problem solving (DSA)', how: 'About 7 lessons away', what: 'Starts in week 3, once arrays are in (week 2). Then a short problem every day, for months.' },
+      { to: 'Object-oriented programming', how: 'About 14 lessons away', what: 'Weeks 4 to 5: the Arena comes back with Hero and Monster as objects. At your pace that is 2 to 3 weeks of evenings, not 5.' },
     ],
     ladder: [
       {
         group: 'Stage 1: programming basics',
         items: [
-          { text: 'Printing, variables, arithmetic, reading errors (lessons 1 to 4)', missions: ['w1m1', 'w1m2', 'w1m3', 'w1m4'] },
-          { text: 'if and else, while loops, the first timed challenge (lessons 5 to 7)', missions: ['w1m5', 'w1m6', 'w1m7'] },
-          { text: 'Two conditions: && and || (lesson 8)', missions: ['w1m8'], state: 'now' },
-          { text: 'Random numbers (lesson 9)', missions: ['w1m9'], state: 'now' },
-          { text: 'Reading what the player types (lesson 10)', missions: ['w1m10'], state: 'now' },
-          { text: 'Methods, Java\'s functions (lesson 11)', missions: ['w1m11'], state: 'now' },
-          { text: 'Second timed challenge (lesson 12)', missions: ['w1m12'], state: 'now' },
-          { text: 'Rematch on a later day: the first proof of mastery', state: 'next' },
-          { text: 'Week 2, the money tool: long and paise, percentages and interest, methods with parameters and return values, arrays, text formatting, Git', state: 'next' },
+          { text: 'Printing, variables, arithmetic, reading errors (lessons 1 to 4)', missions: ['w1m1', 'w1m2', 'w1m3', 'w1m4'], state: 'done' },
+          { text: 'if and else, while loops, the first timed challenge (lessons 5 to 7)', missions: ['w1m5', 'w1m6', 'w1m7'], state: 'done' },
+          { text: 'Two conditions: && and || (lesson 8)', missions: ['w1m8'], state: 'done' },
+          { text: 'Random numbers (lesson 9)', missions: ['w1m9'], state: 'done' },
+          { text: 'Reading what the player types (lesson 10)', missions: ['w1m10'], state: 'done' },
+          { text: 'Methods, Java\'s functions (lesson 11)', missions: ['w1m11'], state: 'done' },
+          { text: 'Second timed challenge (lesson 12)', missions: ['w1m12'], state: 'done' },
+          { text: 'Rematch 1 on a later day: the first proof of mastery (opens Sat 17)', missions: ['w1r1'], state: 'now' },
+          { text: 'Week 2, the money tool: long and paise, percentages and interest, methods with parameters and return values, arrays, text formatting, Git', missions: ['w2m1', 'w2m2', 'w2m3', 'w2m4', 'w2m5', 'w2m6', 'w2m7'], state: 'now' },
           { text: 'Week 3, the card-data decoder: bytes and hex in code, char and String in depth, for loops, arrays of bytes', state: 'later' },
         ],
       },
