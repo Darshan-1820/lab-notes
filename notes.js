@@ -1246,6 +1246,37 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'scanner-in-loop',
+    date: '2026-10-16',
+    title: 'Works when I type, fails in the checks: a new Scanner every round',
+    from: 'Week 1, lesson 12: Challenge: the shop',
+    asked: 'How are these checks failing? For the same inputs I checked, I did not get any exception/error and my code ran as expected.',
+    html: `
+<h3>The short answer</h3>
+<p>Your program made a <b>new Scanner every time round the loop</b>. When you type, that happens to work. When the lab hands over all the numbers at once, the first Scanner swallows all of them, and the second Scanner finds nothing left. So it fails on the second number with <code>NoSuchElementException</code>.</p>
+
+<h3>How a Scanner really reads</h3>
+<p>A Scanner does not take one number from the keyboard. It grabs <b>everything that is waiting</b> (up to about a thousand characters) into its own private box, called a <b>buffer</b>, and then hands you numbers from that box one at a time.</p>
+<ul>
+<li><b>You typing in the terminal:</b> when Scanner 1 looks, only <code>30</code> is waiting, because you have not typed the rest yet. It takes just that. Next round, Scanner 2 looks, and your next number is waiting. Every Scanner gets its one number. It works by luck.</li>
+<li><b>The lab:</b> it puts <code>30 50 40 10 0</code> in the queue before your program even starts. Scanner 1 grabs all five into its box and gives you 30. Next round your code makes Scanner 2. Scanner 1, with 50, 40, 10, 0 still inside, is thrown away. Scanner 2 looks at the queue: empty, and closed. Crash.</li>
+</ul>
+<p>That is why the red message names line 16 and why only the first line, "Bought for 30", was printed.</p>
+<p>List 2 (just <code>0</code>) did not crash, because one Scanner was enough: it read the 0 and the loop ended.</p>
+
+<h3>The rule</h3>
+<p><b>One Scanner per program</b>, made once, before the loop. Every round asks <i>the same</i> Scanner for its next number.</p>
+<p>Real programs get typed input from files and other programs all the time, not only from a person, so "it works when I type it" is not proof. That is exactly why the lab runs four lists.</p>
+
+<h3>The other failure</h3>
+<p>List 2 also said <i>There is an unexpected extra line: "Most Expensive: 0"</i>. The task says <code>Most expensive</code> with a small e. To a computer, E and e are different characters, so the line did not match.</p>
+
+<h3>Check yourself</h3>
+<ol><li>A program makes a Scanner inside a loop. Typed by hand, it works. Why does it break when all the input arrives at once?</li>
+<li>Why did List 2 not crash?</li></ol>
+<p>Answers: the first Scanner grabs all the waiting input into its buffer, and the next Scanner finds the queue empty. List 2 only needed one number, so one Scanner was enough.</p>`,
+  },
+  {
     id: 'run-java-vscode',
     date: '2026-10-16',
     title: 'Running a Java program in VS Code',
