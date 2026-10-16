@@ -1246,6 +1246,34 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'run-java-vscode',
+    date: '2026-10-16',
+    title: 'Running a Java program in VS Code',
+    from: 'Week 1, lesson 11: Give the moves names',
+    asked: 'How to run java program in vs code',
+    html: `
+<h3>The short answer</h3>
+<p>Open the file, then click the small <b>Run</b> link that VS Code shows just above <code>public static void main</code> (or the ▶ button in the top right corner). The program runs in the <b>Terminal</b> panel at the bottom, and that is where you type your moves.</p>
+
+<h3>Or type it yourself in the terminal</h3>
+<p>Open a terminal with <b>Ctrl + \`</b> (the key left of 1), go to the folder, and run the file:</p>
+<pre>cd "play/week1-game"
+java Game.java</pre>
+<p><code>java Game.java</code> does two jobs in one: it turns your code into instructions the computer understands (compiling) and then runs them. Older tutorials do it in two steps, <code>javac Game.java</code> then <code>java Game</code>. Both work.</p>
+
+<h3>If it goes wrong</h3>
+<ul>
+<li><b>No Run link appears:</b> wait a few seconds after opening the file. The Java extension is still starting up (bottom bar shows it loading).</li>
+<li><b>It stops at the first question with a red NoSuchElementException:</b> it was run somewhere with no keyboard attached, like the lab's plain Run button. Run it in the terminal instead. See the note "Reading the red message when nobody types".</li>
+<li><b>"error: ... expected":</b> a typing mistake. The message names the line; fix it, save, run again.</li>
+</ul>
+
+<h3>Check yourself</h3>
+<ol><li>Which panel do you type your moves into?</li>
+<li>What does <code>java Game.java</code> do before it runs anything?</li></ol>
+<p>Answers: the Terminal. It compiles the file first.</p>`,
+  },
+  {
     id: 'roll-formula',
     date: '2026-10-16',
     title: 'The maths in dice.nextInt(high - low + 1) + low',
