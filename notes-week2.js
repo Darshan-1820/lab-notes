@@ -66,6 +66,203 @@ window.NOTES.push(
   },
 
   {
+    id: 'concept-type-conversion',
+    kind: 'concept', lesson: 'w2m1', order: 13.1,
+    date: '2026-10-18',
+    title: 'Type conversion, overflow and autoboxing',
+    from: 'Goes with week 2, lesson 1: Count it in paise (the "Break it" step)',
+    widgets: {
+      'c13b-hidden': {
+        code: ['int total = 0;', 'long price = 2000000000L;', 'total += price;', 'total += price;', 'System.out.println(total);'],
+        steps: [
+          { line: 0, vars: { total: 0 }, out: [], note: 'An int: 32 switches, top value 2,147,483,647.' },
+          { line: 1, vars: { total: 0, price: 2000000000 }, out: [], note: 'A long: 64 switches.' },
+          { line: 2, vars: { total: 2000000000, price: 2000000000 }, out: [], note: 'Java reads this as total = (int) (total + price). total is widened to a long, the sum is a long (2,000,000,000), and the hidden (int) puts it back. It fits.' },
+          { line: 3, vars: { total: -294967296, price: 2000000000 }, out: [], note: 'The sum is 4,000,000,000. It does not fit in 32 switches. Java keeps the last 32 and the first one counts as negative: 4,000,000,000 - 4,294,967,296 = -294,967,296.' },
+          { line: 4, vars: { total: -294967296, price: 2000000000 }, out: ['-294967296'], note: 'No error at any point. That is why overflow is dangerous.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p>Every box in Java has a <b>type</b>, and number types come in sizes. A <b>type conversion</b> moves a value from one type to another. Java does it on its own when it is always safe, and refuses when it might lose something, unless you force it.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Type</th><th>Switches</th><th>Smallest</th><th>Largest</th></tr>
+<tr><td><code>byte</code></td><td>8</td><td>-128</td><td>127</td></tr>
+<tr><td><code>short</code></td><td>16</td><td>-32,768</td><td>32,767</td></tr>
+<tr><td><code>int</code></td><td>32</td><td>-2,147,483,648</td><td>2,147,483,647</td></tr>
+<tr><td><code>long</code></td><td>64</td><td>-9,223,372,036,854,775,808</td><td>9,223,372,036,854,775,807</td></tr>
+<tr><td><code>double</code></td><td>64</td><td colspan="2">numbers with a point, very large range, not exact (lesson 1)</td></tr>
+</table></div>
+<p>Why the top of an int is 2,147,483,647 and not 4 billion: one of the 32 switches is spent on the sign. The bits-and-bytes note shows the red "negative" switch.</p>
+
+<h3>1. Widening: Java does it for you</h3>
+<p>Small type into a bigger type. It always fits, so there is no message:</p>
+<pre>byte → short → int → long → float → double</pre>
+<p><code>int n = 5; long big = n;</code> and <code>double d = 7;</code> (prints <code>7.0</code>) both just work. A <code>char</code> also widens to an int: <code>int code = 'A';</code> gives 65, the letter's number.</p>
+<p>One fine print: a long into a float or double always fits the <i>size</i>, but can lose the last digits. <code>float f = 123456789L;</code> prints <code>1.23456792E8</code>. Another reason money stays in whole numbers.</p>
+
+<h3>2. Narrowing: Java refuses, unless you cast</h3>
+<p>Bigger type into a smaller one. It might not fit, so Java stops:</p>
+<pre>int n = 7L;   // error: incompatible types: possible lossy conversion from long to int</pre>
+<p>Java checks the <b>types</b>, not the value. 7 would fit, but a long might hold 9 quintillion, so the line is refused. To force it, write a <b>cast</b>: the target type in round brackets in front of the value.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Cast</th><th>Result (Java 17)</th><th>Why</th></tr>
+<tr><td><code>(int) 3000000000L</code></td><td><code>-1294967296</code></td><td>Too big: only the last 32 switches are kept</td></tr>
+<tr><td><code>(byte) 200</code></td><td><code>-56</code></td><td>Only the last 8 switches: 200 - 256</td></tr>
+<tr><td><code>(int) 3.99</code></td><td><code>3</code></td><td>double to int drops the part after the point, no rounding</td></tr>
+<tr><td><code>(int) -3.99</code></td><td><code>-3</code></td><td>Dropped towards zero, not down</td></tr>
+</table></div>
+<p>A cast is a promise: "I know it fits, or I accept what is lost". Java believes you.</p>
+
+<h3>3. Mixed sums take the bigger type</h3>
+<p>When the two sides of <code>+ - * / %</code> have different types, Java first widens the smaller one. <code>int + long</code> is worked out as a long. <code>int * int</code> stays an int, even if the answer is going into a long box:</p>
+<pre>int price = 2000000000;
+long total = price * 3;   // prints 1705032704: overflowed as ints first
+long right = (long) price * 3;   // 6000000000: one side widened before multiplying</pre>
+
+<h3>4. The hidden cast in += (why "Break it" behaves as it does)</h3>
+<p>Java's rule book (the Java Language Specification, section 15.26.2) says <code>a += b</code> means <code>a = (type of a) (a + b)</code>. So:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>total is an int, price a long</th><th>What Java does</th></tr>
+<tr><td><code>total = total + price;</code></td><td class="bad">Refuses: possible lossy conversion from long to int. The sum is a long and there is no cast.</td></tr>
+<tr><td><code>total += price;</code></td><td>Runs. The cast is built in, and the answer is squeezed into the int.</td></tr>
+</table></div>
+<div data-widget="stepper" data-ref="c13b-hidden"></div>
+
+<h3>5. Overflow: what "does not fit" really does</h3>
+<p>Java never cuts a too-big answer down to the top value. It keeps the last 32 switches (64 for a long) and throws the rest away. Counting runs past the top and carries on from the bottom, like a car's meter rolling over: <code>Integer.MAX_VALUE + 1</code> is <code>-2147483648</code>. <b>Try it:</b> press "Add it again", then switch the box.</p>
+<div data-widget="overflow" data-key="c13b-overflow" data-type="int" data-total="2147483647" data-add="1"></div>
+<p>Real programs that must not overflow ask Java to check: <code>Math.addExact(2000000000, 2000000000)</code> stops with <code>java.lang.ArithmeticException: integer overflow</code> instead of a wrong answer. There are <code>multiplyExact</code> and <code>subtractExact</code> too. Payment systems use these, or BigDecimal, so a wrong total becomes a loud error.</p>
+
+<h3>6. The other conversion: autoboxing</h3>
+<p>Everything above converts between <b>primitive</b> types, the plain boxes (<code>byte short int long float double char boolean</code>). Each primitive has an <b>object</b> twin, its <b>wrapper</b>, with a capital letter. <span class="later">Coming in weeks 4 to 5: what an object is.</span></p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Primitive</th><th>Wrapper</th></tr>
+<tr><td><code>int</code></td><td><code>Integer</code></td></tr>
+<tr><td><code>long</code></td><td><code>Long</code></td></tr>
+<tr><td><code>double</code></td><td><code>Double</code></td></tr>
+<tr><td><code>char</code></td><td><code>Character</code></td></tr>
+<tr><td><code>boolean</code></td><td><code>Boolean</code></td></tr>
+</table></div>
+<p>Why the twins exist: Java's lists and maps can only hold objects, and an object can be <code>null</code> ("no value"), which a primitive can't. <span class="later">Coming with collections: List and Map.</span></p>
+<ul>
+<li><b>Autoboxing</b>: Java wraps a primitive in its wrapper for you. <code>Integer boxed = 5;</code></li>
+<li><b>Unboxing</b>: Java takes the value out. <code>int back = boxed;</code> Then <code>boxed + back</code> prints 10.</li>
+</ul>
+<p>"Auto" because you never write the wrapping. It happens when a primitive goes where an object is needed, and the other way round.</p>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Code</th><th>What happens (Java 17)</th></tr>
+<tr><td><code>int n = 7L;</code></td><td class="bad">incompatible types: possible lossy conversion from long to int</td></tr>
+<tr><td><code>total = total + price;</code> (int total, long price)</td><td class="bad">the same message, pointing at the <code>+</code></td></tr>
+<tr><td><code>total += price;</code> with a big price</td><td>No message. A wrong, maybe negative, total.</td></tr>
+<tr><td><code>long t = price * 3;</code> with int price</td><td>No message. Overflowed before it reached the long.</td></tr>
+<tr><td><code>Integer missing = null; int n = missing;</code></td><td class="bad">NullPointerException: Cannot invoke "java.lang.Integer.intValue()" because ... is null</td></tr>
+<tr><td><code>Integer c = 1000, e = 1000;</code> then <code>c == e</code></td><td><code>false</code>. <code>==</code> on objects asks "the same object?". With 127 it says true, because Java reuses the objects from -128 to 127. Use <code>c.equals(e)</code> (true).</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary><code>long a = 10; int b = a;</code> Does it compile?</summary><p>No: possible lossy conversion from long to int. Long to int is narrowing. Write <code>int b = (int) a;</code> if you are sure it fits.</p></details>
+<details><summary>Why does <code>total += price</code> run when <code>total = total + price</code> does not?</summary><p>The rule for <code>+=</code> includes a cast back to the type of total. The long form has no cast, so Java refuses to narrow without you asking.</p></details>
+<details><summary>What does <code>(byte) 130</code> give?</summary><p>-126. A byte keeps only 8 switches: 130 - 256 = -126.</p></details>
+<details><summary>What is the difference between type conversion and autoboxing?</summary><p>Type conversion changes between primitive types (int to long, double to int). Autoboxing changes between a primitive and its wrapper object (int to Integer and back). Java does both on its own in some places.</p></details>
+<details><summary>A program adds up a year of payments in an int and gets a negative total. What happened, and two fixes?</summary><p>The total passed 2,147,483,647 and overflowed. Keep the total in a long, and use <code>Math.addExact</code> where a wrong answer must never pass silently.</p></details>`,
+  },
+
+  {
+    id: 'concept-git',
+    kind: 'concept', lesson: 'w2m1', order: 13.2,
+    date: '2026-10-18',
+    title: 'Git from zero: snapshots of your code',
+    from: 'Goes with week 2, lessons 1 and 2 (the Git steps)',
+    widgets: {
+      'c13c-git': {
+        code: ['git status', 'git add play/week2-money/Till.java', 'git status', 'git commit -m "Till: totals in paise"', 'git status', 'git log --oneline'],
+        steps: [
+          { line: 0, vars: { folder: 'Till.java (changed)', staging: '(empty)', history: '(older snapshots)' }, out: ['Changes not staged for commit:', '        modified:   play/week2-money/Till.java'], note: 'Git compares your folder with the last snapshot. Till.java is different, so it is listed in red.' },
+          { line: 1, vars: { folder: 'Till.java', staging: 'Till.java', history: '(older snapshots)' }, out: [], note: 'add copies the file\'s current state into the staging area. No output means it worked.' },
+          { line: 2, vars: { folder: 'Till.java', staging: 'Till.java', history: '(older snapshots)' }, out: ['Changes to be committed:', '        modified:   play/week2-money/Till.java'], note: 'Now green: chosen for the next snapshot, not saved yet.' },
+          { line: 3, vars: { folder: 'Till.java', staging: '(empty)', history: '49fbc8d Till: totals in paise' }, out: ['[main 49fbc8d] Till: totals in paise', ' 1 file changed, 21 insertions(+)'], note: 'The snapshot is taken. 49fbc8d is its short id. The staging area is empty again.' },
+          { line: 4, vars: { folder: 'Till.java', staging: '(empty)', history: '49fbc8d Till: totals in paise' }, out: ['On branch main', 'nothing to commit, working tree clean'], note: 'Folder and last snapshot match. (The lab\'s own files may still be listed: leave those.)' },
+          { line: 5, vars: { folder: 'Till.java', staging: '(empty)', history: '49fbc8d Till: totals in paise' }, out: ['49fbc8d Till: totals in paise', 'd7d460d State: 2026-10-17 planning ...'], note: 'Every snapshot, newest first. Press q if the list waits at the end.' },
+        ],
+      },
+    },
+    html: `
+<h3>The idea</h3>
+<p><b>Git</b> keeps a history of a folder. Every time you save a <b>commit</b>, Git stores a snapshot of the files you chose, with a message, your name and the time. You can see every change ever made, compare any two versions, and go back. A folder Git looks after is a <b>repository</b> (repo); the history lives in a hidden <code>.git</code> folder inside it. <b>GitHub</b> is a website that keeps a copy of a repository online. Git is the tool, GitHub is the place.</p>
+
+<h3>The terminal, first</h3>
+<p>A terminal is a window where you type commands. Open one in VS Code with menu Terminal, New Terminal. A command runs when you press Enter, and works on the folder you are "in".</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Command</th><th>Means</th></tr>
+<tr><td><code>pwd</code></td><td>print working directory: which folder am I in?</td></tr>
+<tr><td><code>ls</code></td><td>list what is in this folder</td></tr>
+<tr><td><code>cd play</code></td><td>change directory: go into the folder <code>play</code></td></tr>
+<tr><td><code>cd ..</code></td><td>go up one folder (<code>..</code> always means the folder above)</td></tr>
+</table></div>
+
+<h3>Three places a change lives</h3>
+<pre>your folder  --git add-->  staging area  --git commit-->  history
+(you edit)                 (chosen for the     (saved snapshots)
+                            next snapshot)</pre>
+<p>The staging area is a waiting room. It lets one snapshot hold exactly the files you mean, for example Till.java but not the lab's <code>progress.json</code>.</p>
+<div data-widget="stepper" data-ref="c13c-git"></div>
+
+<h3>The commands</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>git status</code></td><td>What changed since the last snapshot, and what is staged. Run it before and after everything.</td></tr>
+<tr><td><code>git add &lt;file&gt;</code></td><td>Put the file's current state in the staging area</td></tr>
+<tr><td><code>git commit -m "message"</code></td><td>Take the snapshot of what is staged. <code>-m</code> means "the message follows"</td></tr>
+<tr><td><code>git log --oneline</code></td><td>The list of snapshots, one per line, newest first (<b>q</b> to leave)</td></tr>
+<tr><td><code>git diff &lt;file&gt;</code></td><td>The lines that changed since the last snapshot</td></tr>
+<tr><td><code>git restore &lt;file&gt;</code></td><td>Throw away changes and put the file back as in the last snapshot (gone for good)</td></tr>
+<tr><td><code>git push</code></td><td>Copy your snapshots to GitHub (your tutor does this for now)</td></tr>
+</table></div>
+
+<h3>Reading git status</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Git says</th><th>Meaning</th></tr>
+<tr><td><code>On branch main</code></td><td>The line of history you are on. One line is enough for now. <span class="later">Coming later: branches.</span></td></tr>
+<tr><td><code>Untracked files:</code> (red)</td><td>Files Git has never saved</td></tr>
+<tr><td><code>Changes not staged for commit:</code> (red) <code>modified:</code></td><td>Saved before, changed since, not chosen yet</td></tr>
+<tr><td><code>Changes to be committed:</code> (green)</td><td>Chosen: the next commit will include them</td></tr>
+<tr><td><code>nothing to commit, working tree clean</code></td><td>The folder matches the last snapshot</td></tr>
+</table></div>
+
+<h3>Reading git diff</h3>
+<pre>--- a/play/week2-money/Bill.java     (the last snapshot)
++++ b/play/week2-money/Bill.java     (your file now)
+@@ -9,7 +9,7 @@                      (7 lines from line 9, old and new)
+         long gst = percentOf(price, rate);
+-        System.out.println("GST: " + gst);
++        System.out.println("Tax: " + gst);</pre>
+<p><code>-</code> (red) lines were removed, <code>+</code> (green) lines were added, and lines starting with a space did not change. They are shown so you can find the spot.</p>
+
+<h3>Good messages</h3>
+<p>Say what changed, short, as if finishing "This commit will...": <code>Till: totals in paise</code>, <code>Bill: round GST to the nearest paisa</code>. Not <code>update</code>, <code>fix</code> or <code>asdf</code>: in a month you won't know what they mean.</p>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>You did</th><th>Git says (Git 2.49)</th><th>Fix</th></tr>
+<tr><td>Mistyped the file name in <code>git add</code></td><td class="bad">fatal: pathspec 'play/Tll.java' did not match any files</td><td>Check with <code>git status</code>, copy the name from there</td></tr>
+<tr><td><code>git commit</code> without <code>git add</code></td><td class="bad">no changes added to commit (use "git add" and/or "git commit -a")</td><td>Add first</td></tr>
+<tr><td><code>git commit</code> without <code>-m</code></td><td>A VS Code tab opens and waits</td><td>Type the message on the first line, save, close the tab</td></tr>
+<tr><td>Ran <code>git log</code> and the terminal is stuck</td><td>A <code>:</code> or <code>(END)</code> at the bottom</td><td>Press <b>q</b></td></tr>
+<tr><td>Ran a command in the wrong folder</td><td class="bad">fatal: not a git repository</td><td><code>pwd</code>, then <code>cd</code> into engineering-lab</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>You changed Till.java and ran <code>git commit -m "x"</code> straight away. What happens?</summary><p>Nothing is saved: "no changes added to commit". The change has to be staged with <code>git add</code> first.</p></details>
+<details><summary>What is the staging area for?</summary><p>Choosing exactly which changes go into the next snapshot, so one commit holds one idea and leaves other changed files out.</p></details>
+<details><summary><code>git diff</code> shows a line starting with <code>+</code>. What does it mean?</summary><p>That line is in your file now but was not in the last snapshot: it was added.</p></details>
+<details><summary>Which command can lose work for good, and why?</summary><p><code>git restore &lt;file&gt;</code>. It overwrites the file with the last snapshot, and the changes you throw away were never in a snapshot, so Git can't bring them back.</p></details>`,
+  },
+
+  {
     id: 'concept-percent-rounding',
     kind: 'concept', lesson: 'w2m2', order: 14,
     date: '2026-10-15',

@@ -1246,6 +1246,114 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'paise-typed-input',
+    date: '2026-10-18',
+    title: 'What a paisa is, and how the till reads one price per line',
+    from: 'Week 2, lesson 1: Count it in paise',
+    asked: 'The cashier types the price of each item in paise - Unclear? Paise? The cashier types the price of each item in one line right? then moves to the next line until the input is 0',
+    widgets: {
+      'q-paise-read': {
+        code: ['long price = keys.nextLong();', 'price = keys.nextLong();', 'price = keys.nextLong();', 'price = keys.nextLong();'],
+        steps: [
+          { line: 0, vars: { 'still waiting': '9900 1050 0', price: 2550 }, out: [], note: 'Typed: 2550 Enter 9900 Enter 1050 Enter 0 Enter. nextLong takes the first number, 2550 (₹25.50).' },
+          { line: 1, vars: { 'still waiting': '1050 0', price: 9900 }, out: [], note: 'The next call takes the next number. The Enter between them only separates them.' },
+          { line: 2, vars: { 'still waiting': '0', price: 1050 }, out: [], note: 'Third item, ₹10.50.' },
+          { line: 3, vars: { 'still waiting': '(nothing)', price: 0 }, out: [], note: '0: the customer is done. Your loop stops here and prints the bill. Asking for another number now would crash with NoSuchElementException.' },
+        ],
+      },
+    },
+    html: `
+<h3>What a paisa is</h3>
+<p>A rupee is split into 100 <b>paise</b> (one <b>paisa</b>, many paise), the way a metre is 100 centimetres. ₹25.50 is 25 rupees and 50 paise, which is 25 × 100 + 50 = <b>2550 paise</b>. The till only ever deals in paise, so it never needs a decimal point, and whole numbers are always exact.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Label</th><th>Sum</th><th>Typed</th></tr>
+<tr><td>₹25.50</td><td>25 × 100 + 50</td><td><code>2550</code></td></tr>
+<tr><td>₹99</td><td>99 × 100 + 0</td><td><code>9900</code></td></tr>
+<tr><td>₹0.05</td><td>0 × 100 + 5</td><td><code>5</code></td></tr>
+<tr><td>₹1,234.50</td><td>1234 × 100 + 50</td><td><code>123450</code></td></tr>
+</table></div>
+<p>Going back is / and %: 2550 / 100 = 25 rupees, 2550 % 100 = 50 paise.</p>
+
+<h3>One price per line: yes</h3>
+<p>Exactly as you said. The cashier types a price and presses Enter, then the next, and <code>0</code> ends the customer. Each <code>keys.nextLong()</code> takes the next number from what is waiting:</p>
+<div data-widget="stepper" data-ref="q-paise-read"></div>
+<p>In the checks, the lab types every line for you in one go before your program starts. The numbers sit in a queue, and each nextLong takes the next one. That is why the program must stop at the 0: the queue is empty after it.</p>
+
+<h3>Check yourself</h3>
+<details><summary>How is ₹7.05 typed into the till?</summary><p>705: 7 × 100 + 5.</p></details>
+<details><summary>The till reads 1999, 1, 0. What is the bill?</summary><p>Items: 2. Total: 2000 paise, which prints as 20 rupees 0 paise.</p></details>`,
+  },
+
+  {
+    id: 'no-part-paisa',
+    date: '2026-10-18',
+    title: 'Why there is no 0.54 of a paisa: long, double and BigDecimal compared',
+    from: 'Week 2, lesson 2: Tax to the nearest paisa',
+    asked: 'Money cannot have 0.54 of a paisa, -> Why? Because Int division does not store point/decimal values? Gap again. This is confusing. What happens if I store money as long and then divide? Or big decimal and then do the maths? How to multiply this in my head quickly? 1003 * 18 ?? With basis points you divide by 10000, so half is 5000. -> Did not understand. (later) Did not understand much about the basis points.',
+    html: `
+<h3>The short answer</h3>
+<p>Two different reasons, and both are true at once:</p>
+<ol>
+<li><b>Money itself.</b> 1 paisa is the smallest amount that exists for paying. No coin, note or account entry holds part of one. A bill has to be payable, so tax always ends as whole paise. This would be true in any language, or on paper.</li>
+<li><b>Java.</b> Whole-number division (int or long on both sides of <code>/</code>) drops the part after the point. It doesn't round, it cuts. So yes, a long can't hold 180.54.</li>
+</ol>
+<p>Reason 1 means we <i>must</i> round to whole paise. Reason 2 means plain division would quietly round <i>down</i> for us. So the lesson makes the rounding a choice you write on purpose.</p>
+
+<h3>What happens with each way of storing it (all run in Java 17)</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Code</th><th>Prints</th><th>Verdict</th></tr>
+<tr><td><code>long price = 1003;</code> <code>price * 18 / 100</code></td><td><code>180</code></td><td>Exact, but always rounded down: 0.54 paisa lost per bill</td></tr>
+<tr><td><code>price * 18 % 100</code></td><td><code>54</code></td><td>The cut-off part, if you want to look at it</td></tr>
+<tr><td><code>(price * 18 + 50) / 100</code></td><td><code>181</code></td><td>Exact and rounded to the nearest: what lesson 2 teaches</td></tr>
+<tr><td><code>price * 18 / 100.0</code></td><td><code>180.54</code></td><td>Done in double. Looks right here, but doubles aren't exact in general (0.1 + 0.2). Not for money.</td></tr>
+<tr><td>BigDecimal: <code>1003 × 18 ÷ 100</code></td><td><code>180.54</code></td><td>Exact decimal digits</td></tr>
+<tr><td>BigDecimal, then <code>.setScale(0, RoundingMode.HALF_UP)</code></td><td><code>181</code></td><td>Exact, rounded by a rule you name</td></tr>
+</table></div>
+<p>The BigDecimal lines in full, for later (they use objects, <span class="later">coming in weeks 4 to 5</span>):</p>
+<pre>BigDecimal gst = new BigDecimal("1003")
+        .multiply(new BigDecimal("18"))
+        .divide(new BigDecimal("100"));          // 180.54
+BigDecimal paid = gst.setScale(0, RoundingMode.HALF_UP);   // 181</pre>
+
+<h3>So is BigDecimal better?</h3>
+<p>It keeps exact decimals while you calculate, which helps when a sum has many steps (interest, then tax, then a discount) and you want to round only once at the end. It does <b>not</b> remove the rounding decision. The bill still needs whole paise, so you still call <code>setScale</code> with a rounding rule. It even forces the choice: <code>new BigDecimal("100").divide(new BigDecimal("3"))</code> throws <code>Non-terminating decimal expansion; no exact representable decimal result.</code> because 33.333... never ends. You must say how many digits and how to round: <code>divide(three, 2, RoundingMode.HALF_UP)</code> gives 33.33.</p>
+<p>Long paise: fast, simple, exact, and you round with "add half, then divide". BigDecimal: exact decimals, slower and wordier, with named rounding rules. Banks use both. Spring Boot projects later will use BigDecimal; this week stays with long so you see every step.</p>
+
+<h3>What a basis point is</h3>
+<p>Percent means "out of 100". Rates like 12.5% have a point, and a long can't hold a point. So we use the same trick as paise: 1 rupee = 100 paise, and <b>1% = 100 basis points</b>. One basis point is a hundredth of a percent.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Money</th><th>Rates</th></tr>
+<tr><td>₹25.50 → 2550 paise</td><td>12.5% → 1250 basis points</td></tr>
+<tr><td>rupees × 100 = paise</td><td>percent × 100 = basis points</td></tr>
+<tr><td>₹1 = 100 paise</td><td>100% = 10,000 basis points</td></tr>
+</table></div>
+<p>Percent is "out of 100", so you divide by 100. Basis points are "out of 10,000", so you divide by 10,000. 18 out of 100 and 1800 out of 10,000 are the same share, so both give 180.54 for 1003 paise.</p>
+
+<h3>"With basis points you divide by 10000, so half is 5000"</h3>
+<p>The rounding rule is <b>add half of the number you divide by, then divide</b>. Why it works: division cuts down to the whole number below, and adding half first lifts every answer by exactly 0.5 before the cut. 180.54 becomes 181.04 and is cut to 181. 180.49 becomes 180.99 and is cut to 180. So it lands on the nearest whole number.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th></th><th>Percent (÷ 100)</th><th>Basis points (÷ 10000)</th></tr>
+<tr><td>18% written as</td><td>18</td><td>1800</td></tr>
+<tr><td>1003 × rate</td><td>18,054</td><td>1,805,400</td></tr>
+<tr><td>Half of the divisor</td><td>50</td><td>5,000</td></tr>
+<tr><td>Add it</td><td>18,104</td><td>1,810,400</td></tr>
+<tr><td>Divide (cut)</td><td><b>181</b></td><td><b>181</b></td></tr>
+</table></div>
+<p>The same answer. Basis points are a scale 100 times finer (1% = 100 basis points), so the multiply step gives a number 100 times bigger, the divide step divides by 100 times more, and "half" is 100 times bigger too: 50 becomes 5000. The scale exists so rates like 12.5% (1250) stay whole numbers.</p>
+
+<h3>1003 × 18 in your head</h3>
+<p>Split the awkward number into easy parts, multiply each part, then add. This is the <b>distributive rule</b>: 18 × (1000 + 3) = 18 × 1000 + 18 × 3.</p>
+<pre>1003 × 18 = 1000 × 18  +  3 × 18
+          =   18000    +    54
+          =   18054</pre>
+<p>Or use a round neighbour: 18 = 20 - 2, so 1003 × 20 - 1003 × 2 = 20060 - 2006 = 18054. Dividing by 100 moves the point two places left: 180.54. Try the same on 2005 × 12 (2000 × 12 + 5 × 12 = 24000 + 60 = 24060).</p>
+
+<h3>Check yourself</h3>
+<details><summary>18% of 1001 paise: what do <code>1001 * 18 / 100</code> and <code>(1001 * 18 + 50) / 100</code> give?</summary><p>1001 × 18 = 18018. 18018 / 100 = 180 (180.18 cut). (18018 + 50) / 100 = 18068 / 100 = 180. Both give 180, because 0.18 rounds down anyway.</p></details>
+<details><summary>Does storing money in BigDecimal mean you never have to round?</summary><p>No. It keeps exact decimals while you work, but a payable amount must be whole paise, so you still round once, with setScale and a rule.</p></details>
+<details><summary>In your head: 504 × 25?</summary><p>500 × 25 + 4 × 25 = 12500 + 100 = 12600.</p></details>`,
+  },
+  {
     id: 'scanner-in-loop',
     date: '2026-10-16',
     title: 'Works when I type, fails in the checks: a new Scanner every round',

@@ -40,6 +40,7 @@
 //   apdu      the commands a terminal sends to a chip card, byte by byte
 //   threeruns  the lesson 9 fight run three times with Java's exact Random: seed 7 vs new Random()
 //   seedmachine  java.util.Random with Java's exact formula, one roll at a time (data-seed, data-n, data-k)
+//   overflow  a byte/short/int/long box plus a number: the real answer, what Java stores, where it wraps (data-type, data-total, data-add)
 
 (function () {
   const state = {};   // widget positions, kept while the page stays open
@@ -206,6 +207,13 @@
   .pxgrid.small { width: 8px; gap: 0; grid-template-columns: repeat(8, 1px); }
   .pxgrid.small .px { border: 0; border-radius: 0; width: 1px; height: 1px; aspect-ratio: auto; }
   .money .wline input { width: 160px; }
+  .overflow .wline input { width: 190px; }
+  .overflow .wrow button { font-size: 14px; padding: 6px 10px; }
+  .ovline { position: relative; height: 14px; margin: 14px 4px 2px; border-radius: 99px; background: linear-gradient(90deg, var(--bad) 0 50%, var(--accent) 50% 100%); opacity: .85; }
+  .ovmark { position: absolute; top: -6px; width: 4px; height: 26px; margin-left: -2px; background: var(--text); border-radius: 2px; }
+  .ovzero { position: absolute; top: 0; width: 2px; height: 14px; margin-left: -1px; background: var(--panel); }
+  .ovends { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--dim); gap: 6px; overflow-wrap: anywhere; }
+  .ovbits { overflow-wrap: anywhere; white-space: normal; }
   .mti { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
   .mtinote { margin-left: 8px; font-size: 14px; }
   .bmgrid { display: grid; gap: 3px; }
@@ -1518,7 +1526,63 @@
     draw();
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget };
+
+  // ---- a whole-number box that runs out of room: <div data-widget="overflow" data-key data-type="int" data-total data-add> ----
+  // Worked out with BigInt exactly the way Java stores it: only the last N switches are kept,
+  // and the first switch counts as negative. Checked against Java 17 for byte, short, int and long.
+  function overflowWidget(node) {
+    const key = node.dataset.key;
+    const TYPES = { byte: 8, short: 16, int: 32, long: 64 };
+    if (!state[key]) state[key] = { type: TYPES[node.dataset.type] ? node.dataset.type : 'int', total: node.dataset.total || '2000000000', add: node.dataset.add || '2000000000' };
+    const st = state[key];
+    const commas = b => { const neg = b < 0n, t = (neg ? -b : b).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (neg ? '-' : '') + t; };
+    const parse = v => /^-?\d{1,25}$/.test(String(v).trim()) ? BigInt(String(v).trim()) : null;
+    node.innerHTML = ''; node.className = 'bitsbox overflow';
+    const typeRow = el('div', 'wrow');
+    const inTotal = el('input'); inTotal.type = 'text'; inTotal.inputMode = 'numeric'; inTotal.value = st.total; inTotal.setAttribute('aria-label', 'What the box holds now');
+    const inAdd = el('input'); inAdd.type = 'text'; inAdd.inputMode = 'numeric'; inAdd.value = st.add; inAdd.setAttribute('aria-label', 'The number added');
+    const l1 = el('div', 'wline', '<span>The box holds</span>'); l1.append(inTotal);
+    const l2 = el('div', 'wline', '<span>Add</span>'); l2.append(inAdd);
+    const out = el('div', 'meanings');
+    const again = el('div', 'wrow');
+    function draw() {
+      typeRow.innerHTML = '<span>The box:</span>';
+      Object.keys(TYPES).forEach(t => { const b = btn(t + ' (' + TYPES[t] + ' switches)', t === st.type ? 'primary' : '', () => { st.type = t; draw(); }); b.setAttribute('aria-pressed', String(t === st.type)); typeRow.append(b); });
+      st.total = inTotal.value; st.add = inAdd.value;
+      const n = TYPES[st.type], M = 1n << BigInt(n), min = -(M >> 1n), max = (M >> 1n) - 1n;
+      const a = parse(st.total), b = parse(st.add);
+      again.innerHTML = '';
+      if (a === null || b === null) { out.innerHTML = '<div class="bitmsg">Type whole numbers only, like 2000000000 or -5 (no commas).</div>'; return; }
+      if (a < min || a > max) { out.innerHTML = '<div class="bitmsg">A ' + st.type + ' cannot even hold ' + commas(a) + ' to start with. Its range is ' + commas(min) + ' to ' + commas(max) + '.</div>'; return; }
+      const real = a + b;
+      const stored = (((real - min) % M) + M) % M + min;
+      const fits = real === stored;
+      const pos = v => Number(((v - min) * 10000n) / (M - 1n)) / 100;
+      let html = '<div>A <code>' + st.type + '</code> holds from <b>' + commas(min) + '</b> to <b>' + commas(max) + '</b>.</div>'
+        + '<div>The real answer: ' + commas(a) + ' + ' + commas(b) + ' = <b>' + commas(real) + '</b></div>';
+      if (fits) html += '<div>What Java stores: <b>' + commas(stored) + '</b> <span class="yes">(it fits)</span></div>';
+      else {
+        const laps = (real - stored) / M;
+        html += '<div>What Java stores: <b class="bad">' + commas(stored) + '</b> <span class="bad">(wrong: it did not fit)</span></div>'
+          + '<div class="cnlabel">The answer is ' + (real > max ? commas(real - max) + ' past the top' : commas(min - real) + ' below the bottom') + '. The box has only ' + n + ' switches, so Java keeps the last ' + n + ' and drops the rest. That is the same as ' + (laps > 0n ? 'taking away ' : 'adding ') + commas((laps < 0n ? -laps : laps) * M) + ' (2 to the power ' + n + (laps === 1n || laps === -1n ? '' : ', ' + commas(laps < 0n ? -laps : laps) + ' times') + '): counting goes past ' + commas(max) + ' and carries on from ' + commas(min) + ', like a car meter that rolls over.</div>';
+      }
+      html += '<div class="ovline" role="img" aria-label="Where the stored value sits in the range"><span class="ovmark" style="left:' + pos(stored) + '%"></span><span class="ovzero" style="left:' + pos(0n) + '%"></span></div>'
+        + '<div class="ovends"><span>' + commas(min) + '</span><span>0</span><span>' + commas(max) + '</span></div>';
+      if (n <= 32) {
+        const bits = ((stored % M) + M) % M;
+        const str = bits.toString(2).padStart(n, '0').replace(/(.{8})(?=.)/g, '$1 ');
+        html += '<div>The ' + n + ' switches Java keeps: <code class="ovbits">' + str + '</code></div>'
+          + '<div class="cnlabel">The first switch is worth ' + commas(min) + ' (negative), every other one is positive. ' + (stored < 0n ? 'It is on, so the number reads as negative.' : 'It is off, so the number reads as positive.') + '</div>';
+      }
+      out.innerHTML = html;
+      again.append(btn('Add it again (total = the stored answer)', '', () => { inTotal.value = stored.toString(); draw(); }));
+    }
+    inTotal.addEventListener('input', draw); inAdd.addEventListener('input', draw);
+    node.append(typeRow, l1, l2, out, again);
+    draw();
+  }
+
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget, overflow: overflowWidget };
 
   window.Lab = {
     marks: marksApi,
