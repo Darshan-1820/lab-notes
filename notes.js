@@ -1246,6 +1246,55 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'long-times-int',
+    date: '2026-10-18',
+    title: 'What happens when you multiply a long and an int?',
+    from: 'Week 2, lesson 2: Tax to the nearest paisa',
+    asked: 'What happens when we multiply long and int?',
+    widgets: {
+      'q-long-int': {
+        code: ['int x = 2000000000, y = 2;', 'long z = 5;', 'long bad = x * y * z;', 'long good = z * x * y;'],
+        steps: [
+          { line: 0, vars: { x: 2000000000, y: 2 }, out: [], note: 'Two ints.' },
+          { line: 1, vars: { x: 2000000000, y: 2, z: 5 }, out: [], note: 'One long.' },
+          { line: 2, vars: { x: 2000000000, y: 2, z: 5, bad: -1474836480 }, out: [], note: 'Java works left to right. x * y first: int × int stays an int, and 4,000,000,000 overflows to -294,967,296. Only then is it widened to multiply by the long z: -294,967,296 × 5 = -1,474,836,480. Wrong.' },
+          { line: 3, vars: { x: 2000000000, y: 2, z: 5, bad: -1474836480, good: 20000000000 }, out: [], note: 'z * x first: long × int is a long, 10,000,000,000. Then × y, still a long: 20,000,000,000. Right.' },
+        ],
+      },
+    },
+    html: `
+<h3>The short answer</h3>
+<p>Java first <b>widens the int to a long</b>, then multiplies two longs. <b>The answer is a long.</b> Nothing is lost, because a long has room for everything an int can hold.</p>
+<pre>long paise = 1003;
+int bp = 1800;
+paise * bp          // 1805400, and its type is long</pre>
+<p>That's why <code>percentOf(long paise, int basisPoints)</code> can't overflow on a big bill: <code>paise * basisPoints</code> is worked out as a long.</p>
+
+<h3>The rule for every sign</h3>
+<p>For <code>+ - * / %</code>: when the two sides have different types, the smaller one is widened to the bigger one first, and the answer has the bigger type.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Left</th><th>Right</th><th>Worked out as</th></tr>
+<tr><td>int</td><td>int</td><td>int (can overflow!)</td></tr>
+<tr><td>long</td><td>int</td><td>long</td></tr>
+<tr><td>int</td><td>long</td><td>long</td></tr>
+<tr><td>long</td><td>double</td><td>double</td></tr>
+</table></div>
+
+<h3>Two traps</h3>
+<p><b>1. Storing the answer back in an int.</b> The answer is a long, so this is narrowing, and Java refuses:</p>
+<pre>long p = 5; int b = 3;
+int r = p * b;   // error: incompatible types: possible lossy conversion from long to int</pre>
+<p><b>2. Order matters when there are three or more.</b> Java multiplies left to right, two at a time. If the first two are both ints, they're multiplied as ints and can overflow <i>before</i> the long arrives:</p>
+<div data-widget="stepper" data-ref="q-long-int"></div>
+<p>The fix: put the long first, or cast the first one: <code>(long) x * y * z</code> also gives 20000000000. Simplest of all for money: keep every amount in a long from the start.</p>
+
+<h3>Check yourself</h3>
+<details><summary><code>long a = 3000000000L; int b = 2;</code> What is <code>a * b</code>, and what type?</summary><p>6000000000, a long.</p></details>
+<details><summary><code>int r = a * b;</code> Does it compile?</summary><p>No. long × int is a long, and a long can't go into an int without a cast.</p></details>
+<details><summary>Why does <code>x * y * z</code> go wrong but <code>z * x * y</code> doesn't?</summary><p>In the first, x * y is int × int and overflows before z is used. In the second, the long comes first, so every step is done as a long.</p></details>`,
+  },
+
+  {
     id: 'why-5000-not-50',
     date: '2026-10-18',
     title: 'Why + 5000 and not + 50?',
