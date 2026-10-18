@@ -1246,6 +1246,37 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'three-cashiers-101',
+    date: '2026-10-19',
+    title: 'Three cashiers, one file: why 101 and not 103',
+    from: 'SQL lesson 1: The map',
+    asked: 'You said 103, the answer 101. How?',
+    html: `
+<h3>The idea</h3>
+<p>Each cashier works on their <b>own copy</b> of the file, made when they opened it.<br>
+Saving writes that whole copy back, replacing what is there.<br>
+So the last save wins, and the other two rows are thrown away.</p>
+
+<h3>Step by step</h3>
+<pre>6:00:10  A saves A's copy: 100 + A's row = 101 rows   (file: 101)
+6:00:11  B saves B's copy: 100 + B's row = 101 rows   (file: 101, A's row gone)
+6:00:12  C saves C's copy: 100 + C's row = 101 rows   (file: 101, B's row gone)</pre>
+<p>Only C's row survives. This is called a <b>lost update</b>.</p>
+
+<h3>Why a database gets 103</h3>
+<p>Nobody holds a copy. Each cashier sends one small instruction, "add this row", and the server applies each one to the single real table.</p>
+<pre>A: add 1 row → 101
+B: add 1 row → 102
+C: add 1 row → 103</pre>
+
+<h3>Check yourself</h3>
+<details><summary>Same file, but only A and B open it, and B saves first. How many rows, and whose row survives?</summary>
+<pre>B saves: 100 + B's row = 101
+A saves: 100 + A's row = 101   (B's row gone)
+→ 101 rows, A's row survives</pre></details>`,
+  },
+
+  {
     id: 'array-start-address',
     date: '2026-10-18',
     title: 'What is the 1000 in "start + index × 8"?',
