@@ -1246,6 +1246,34 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'growth-which-balance',
+    date: '2026-10-18',
+    title: 'Growth.java: is the monthly balance simple or compound?',
+    from: 'Week 2, lesson 3: Money that grows',
+    asked: 'We have to print balance each month. This balance is for SI or CI? Because that changes everything.',
+    html: `
+<h3>The short answer</h3>
+<p>The balance printed each month is the <b>compound</b> balance: the real account, where each month's interest is added and earns interest from then on. Simple interest is never a month-by-month balance in this task. It is one number, printed once at the end.</p>
+
+<h3>The example output, read line by line</h3>
+<pre>Month 1: 101000      100000 + 1000 (1% of 100000)
+Month 2: 102010      101000 + 1010 (1% of 101000)   ← compound: grew by more than 1000
+Month 3: 103030      102010 + 1020 (1% of 102010)
+...
+Month 12: 112684
+Compound interest: 12684    112684 − 100000
+Simple interest: 12000      1000 × 12 months</pre>
+<p>If the monthly lines were simple interest, month 2 would say 102000. It says 102010, so it is compound.</p>
+
+<h3>So the program keeps</h3>
+<ul>
+<li>one <b>balance</b> that grows by compound interest, printed every month;</li>
+<li>simple interest, worked out on the starting amount only and printed once at the end (first month's interest × months).</li>
+</ul>
+<p>Your question was a good one. The task text didn't say which balance it meant, and you read the example output to find out, which is exactly what to do.</p>`,
+  },
+
+  {
     id: 'month-interest-from-zero',
     date: '2026-10-18',
     title: 'One month of interest, from zero: why ÷ 10000, ÷ 12 and ÷ 120000',
