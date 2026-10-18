@@ -96,6 +96,17 @@ window.NOTES.push(
 </table></div>
 <p>Why the top of an int is 2,147,483,647 and not 4 billion: one of the 32 switches is spent on the sign. The bits-and-bytes note shows the red "negative" switch.</p>
 
+<h3>Try it first: the conversion explorer</h3>
+<p>Pick where the value comes <b>from</b>, where it goes <b>to</b>, and type a value. The boxes are drawn to size. The explorer shows whether Java converts on its own, the exact error if it refuses, and what you get with a cast. Try these:</p>
+<ul>
+<li>from <code>int</code> to <code>long</code>, any value: widening, always fine.</li>
+<li>from <code>long</code> to <code>int</code>, 7: refused, even though 7 fits.</li>
+<li>from <code>long</code> to <code>int</code>, 3000000000, with the cast: a wrong, negative number.</li>
+<li>from <code>double</code> to <code>int</code>, 3.99, then -3.99: the part after the point is dropped, not rounded.</li>
+<li>from <code>long</code> to <code>double</code>, 9007199254740993: the last digit changes.</li>
+</ul>
+<div data-widget="convert" data-key="c13b-convert" data-from="long" data-to="int" data-value="3000000000"></div>
+
 <h3>1. Widening: Java does it for you</h3>
 <p>Small type into a bigger type. It always fits, so there is no message:</p>
 <pre>byte → short → int → long → float → double</pre>
@@ -210,6 +221,16 @@ long right = (long) price * 3;   // 6000000000: one side widened before multiply
                             next snapshot)</pre>
 <p>The staging area is a waiting room. It lets one snapshot hold exactly the files you mean, for example Till.java but not the lab's <code>progress.json</code>.</p>
 <div data-widget="stepper" data-ref="c13c-git"></div>
+<p><b>Play with it.</b> This is a pretend repository with one file. Press the buttons in any order and watch the file move between the three places. The terminal shows exactly what Git would answer. Try:</p>
+<ol>
+<li><code>git status</code> first: the file is untracked.</li>
+<li><code>git add</code>, then <code>git commit</code>: your first snapshot.</li>
+<li>Change the file, then <code>git diff</code>: the red and green lines.</li>
+<li><code>git restore</code>: the change is gone.</li>
+<li>Change, <code>git add</code>, change again, <code>git status</code>: the same file is both green and red. The staged version and the folder version are different.</li>
+<li><code>git commit</code> twice in a row: the second time there's nothing to save.</li>
+</ol>
+<div data-widget="gitplay" data-key="c13c-play"></div>
 
 <h3>The commands</h3>
 <div class="tablewrap"><table class="plain">

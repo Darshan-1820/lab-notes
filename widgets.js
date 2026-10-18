@@ -40,6 +40,8 @@
 //   apdu      the commands a terminal sends to a chip card, byte by byte
 //   threeruns  the lesson 9 fight run three times with Java's exact Random: seed 7 vs new Random()
 //   seedmachine  java.util.Random with Java's exact formula, one roll at a time (data-seed, data-n, data-k)
+//   convert   pick from-type, to-type and a value: widening or narrowing, Java's message, the result (data-from, data-to, data-value)
+//   gitplay   a pretend repo: buttons for edit/status/add/commit/diff/restore/log, three areas drawn, real Git messages
 //   overflow  a byte/short/int/long box plus a number: the real answer, what Java stores, where it wraps (data-type, data-total, data-add)
 
 (function () {
@@ -208,6 +210,21 @@
   .pxgrid.small .px { border: 0; border-radius: 0; width: 1px; height: 1px; aspect-ratio: auto; }
   .money .wline input { width: 160px; }
   .overflow .wline input { width: 190px; }
+  .convert .wrow button, .gitplay .wrow button { font-size: 14px; padding: 6px 10px; }
+  .convert .wline input { width: 190px; }
+  .cvboxes { display: grid; gap: 4px; margin: 6px 0 4px; }
+  .cvbox { min-width: 110px; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; font: 13px var(--mono, Consolas, monospace); background: var(--panel2); }
+  .cvbox.from { border-color: var(--blue); box-shadow: inset 4px 0 0 var(--blue); }
+  .cvbox.to { border-color: var(--accent); box-shadow: inset -4px 0 0 var(--accent); }
+  .gpcols { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+  .gpcol { flex: 1 1 150px; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: var(--panel2); }
+  .gphead { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .gparrow { align-self: center; font-size: 12.5px; color: var(--dim); }
+  .gpfile { border: 1px solid var(--accent); border-radius: 6px; padding: 5px 7px; margin-bottom: 5px; font-size: 13px; overflow-wrap: anywhere; }
+  .gpfile.old { border-color: var(--line); opacity: .75; }
+  .gpfile code { display: block; margin-top: 3px; font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+  .gpempty { color: var(--dim); font-size: 13px; }
+  .gpterm { min-height: 60px; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
   .overflow .wrow button { font-size: 14px; padding: 6px 10px; }
   .ovline { position: relative; height: 14px; margin: 14px 4px 2px; border-radius: 99px; background: linear-gradient(90deg, var(--bad) 0 50%, var(--accent) 50% 100%); opacity: .85; }
   .ovmark { position: absolute; top: -6px; width: 4px; height: 26px; margin-left: -2px; background: var(--text); border-radius: 2px; }
@@ -1582,7 +1599,145 @@
     draw();
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget, overflow: overflowWidget };
+
+  // ---- type conversion explorer: <div data-widget="convert" data-key data-from="long" data-to="int" data-value> ----
+  // Every verdict, message and result matches Java 17 (checked with javac/java on 2026-10-18):
+  // whole-number narrowing keeps the last N switches; double to a whole number drops the part after the
+  // point (towards zero), saturates at the ends, NaN gives 0, and to byte/short goes through int first.
+  function convertWidget(node) {
+    const key = node.dataset.key;
+    const T = { byte: { bits: 8, rank: 1 }, short: { bits: 16, rank: 2 }, int: { bits: 32, rank: 3 }, long: { bits: 64, rank: 4 }, double: { bits: 64, rank: 5 } };
+    const names = Object.keys(T);
+    if (!state[key]) state[key] = { from: T[node.dataset.from] ? node.dataset.from : 'long', to: T[node.dataset.to] ? node.dataset.to : 'int', value: node.dataset.value || '3000000000' };
+    const st = state[key];
+    const commas = b => { const neg = b < 0n, t = (neg ? -b : b).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (neg ? '-' : '') + t; };
+    const range = t => { const M = 1n << BigInt(T[t].bits); return [-(M >> 1n), (M >> 1n) - 1n]; };
+    const wrap = (v, t) => { const M = 1n << BigInt(T[t].bits), [min] = range(t); return (((v - min) % M) + M) % M + min; };
+    const javaDouble = x => {
+      if (Number.isNaN(x)) return 'NaN';
+      const a = Math.abs(x);
+      if (a !== 0 && (a >= 1e7 || a < 1e-3)) { let [m, e] = x.toExponential().split('e'); if (!m.includes('.')) m += '.0'; return m + 'E' + e.replace('+', ''); }
+      const t = String(x); return t.includes('.') ? t : t + '.0';
+    };
+    node.innerHTML = ''; node.className = 'bitsbox convert';
+    const boxes = el('div', 'cvboxes');
+    const fromRow = el('div', 'wrow'), toRow = el('div', 'wrow');
+    const vline = el('div', 'wline', '<span>The value</span>');
+    const input = el('input'); input.type = 'text'; input.inputMode = 'decimal'; input.value = st.value; input.setAttribute('aria-label', 'The value to convert');
+    vline.append(input);
+    const out = el('div', 'meanings');
+    function picker(row, label, which) {
+      row.innerHTML = '<span>' + label + '</span>';
+      names.forEach(t => { const b = btn(t, t === st[which] ? 'primary' : '', () => { st[which] = t; draw(); }); b.setAttribute('aria-pressed', String(t === st[which])); row.append(b); });
+    }
+    function draw() {
+      picker(fromRow, 'From:', 'from'); picker(toRow, 'To:', 'to');
+      boxes.innerHTML = names.map(t => '<div class="cvbox' + (t === st.from ? ' from' : '') + (t === st.to ? ' to' : '') + '" style="width:' + (T[t].bits / 64 * 100) + '%"><span>' + t + ' · ' + T[t].bits + (t === 'double' ? ' (with a point)' : '') + '</span></div>').join('');
+      st.value = input.value.trim();
+      const from = st.from, to = st.to, fromD = from === 'double';
+      let v;
+      if (fromD) { v = Number(st.value); if (st.value === '' || !/^-?\d+(\.\d+)?([eE][-+]?\d+)?$/.test(st.value)) { out.innerHTML = '<div class="bitmsg">Type a number like 3.99 or -2.5 or 1e20.</div>'; return; } }
+      else {
+        if (!/^-?\d{1,25}$/.test(st.value)) { out.innerHTML = '<div class="bitmsg">A ' + from + ' holds whole numbers only. Type one like 300 or -5 (no commas, no point).</div>'; return; }
+        v = BigInt(st.value); const [lo, hi] = range(from);
+        if (v < lo || v > hi) { out.innerHTML = '<div class="bitmsg">A ' + from + ' can\'t hold ' + commas(v) + '. Its range is ' + commas(lo) + ' to ' + commas(hi) + '.</div>'; return; }
+      }
+      const same = from === to, widening = T[from].rank < T[to].rank;
+      let html = '<div><code>' + from + ' a = ' + (fromD ? st.value : st.value) + (from === 'long' ? 'L' : '') + ';</code> then <code>' + to + ' b = a;</code></div>';
+      if (same) html += '<div>Same type: nothing to convert.</div>';
+      else if (widening) html += '<div class="yes"><b>Widening</b> (' + from + ' into a bigger ' + to + '). Java does it on its own, no cast needed.</div>';
+      else html += '<div class="bad"><b>Narrowing</b> (' + from + ' into a smaller ' + to + '). Java refuses to compile: <code>incompatible types: possible lossy conversion from ' + from + ' to ' + to + '</code></div><div>Java checks the types, not the value, so it refuses even when the value would fit. To force it you write a cast: <code>' + to + ' b = (' + to + ') a;</code></div>';
+      let result, note = '';
+      if (to === 'double') {
+        const d = fromD ? v : Number(v);
+        result = javaDouble(d);
+        if (!fromD && BigInt(Math.round(d)) !== v) note = 'Close, not exact: a double keeps about 15 to 16 significant digits, so a long this big loses its last digits.';
+        else if (!fromD) note = 'Same number, now printed with a point.';
+      } else if (fromD) {
+        const [lo, hi] = range(to === 'byte' || to === 'short' ? 'int' : to);
+        let w;
+        if (Number.isNaN(v)) w = 0n; else if (v >= Number(hi)) w = hi; else if (v <= Number(lo)) w = lo; else w = BigInt(Math.trunc(v));
+        let r = w;
+        if (to === 'byte' || to === 'short') r = wrap(w, to);
+        result = commas(r);
+        const steps = [];
+        if (v !== Math.trunc(v)) steps.push('the part after the point is dropped (towards zero, not rounded)');
+        if (!Number.isNaN(v) && (v > Number(hi) || v < Number(lo))) steps.push('too big for ' + (to === 'byte' || to === 'short' || to === 'int' ? 'an int' : 'a ' + to) + ', so Java stops at the ' + (v > 0 ? 'top' : 'bottom') + ' value');
+        if ((to === 'byte' || to === 'short') && r !== w) steps.push('Java first makes it the int ' + commas(w) + ', then keeps the last ' + T[to].bits + ' switches');
+        note = steps.length ? 'What happened: ' + steps.join('; ') + '.' : 'It fits exactly.';
+      } else {
+        const r = wrap(v, to); result = commas(r);
+        note = r === v ? 'It fits, so the value is unchanged.' : 'It doesn\'t fit in ' + T[to].bits + ' switches. Java keeps the last ' + T[to].bits + ' and drops the rest, which here means ' + (v > r ? 'taking away ' : 'adding ') + commas((v > r ? v - r : r - v)) + '. The number is now wrong.';
+      }
+      html += '<div>' + (widening || same ? 'b holds: ' : 'With the cast, b holds: ') + '<b' + (/wrong|not exact/.test(note) ? ' class="bad"' : '') + '>' + result + '</b></div><div class="cnlabel">' + note + '</div>';
+      out.innerHTML = html;
+    }
+    input.addEventListener('input', draw);
+    node.append(el('div', 'cnlabel', 'The boxes, drawn to size (number of switches):'), boxes, fromRow, toRow, vline, out);
+    draw();
+  }
+
+  // ---- Git playground: <div data-widget="gitplay" data-key> ----
+  // A pretend repository with one file. Every message is Git 2.49's real text for that state
+  // (captured 2026-10-18); only the snapshot ids are made up.
+  function gitPlayWidget(node) {
+    const key = node.dataset.key, FILE = 'play/week2-money/Bill.java';
+    const LINES = ['System.out.println("GST: " + gst);', 'System.out.println("Tax: " + gst);', 'System.out.println("Tax due: " + gst);', 'System.out.println("Tax (18%): " + gst);'];
+    const fresh = () => ({ work: 0, index: null, head: null, commits: [], edits: 0, term: [] });
+    if (!state[key]) state[key] = fresh();
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox gitplay';
+    const cols = el('div', 'gpcols'), buttons = el('div', 'wrow'), term = el('pre', 'gpterm');
+    const ids = ['3f2a9c1', 'b71e04d', '9c0d5aa', '41fe7b2', 'e8a31c6', '07b9d3f'];
+    function statusText() {
+      const out = ['On branch main'];
+      if (!st.commits.length) out.push('', 'No commits yet');
+      const staged = st.index !== null && st.index !== st.head, unstaged = st.index !== null && st.work !== st.index, untracked = st.index === null;
+      if (staged) out.push('', 'Changes to be committed:', st.head === null ? '  (use "git rm --cached <file>..." to unstage)' : '  (use "git restore --staged <file>..." to unstage)', '\t' + (st.head === null ? 'new file:   ' : 'modified:   ') + FILE);
+      if (unstaged) out.push('', 'Changes not staged for commit:', '  (use "git add <file>..." to update what will be committed)', '  (use "git restore <file>..." to discard changes in working directory)', '\tmodified:   ' + FILE);
+      if (untracked) out.push('', 'Untracked files:', '  (use "git add <file>..." to include in what will be committed)', '\t' + FILE, '', 'nothing added to commit but untracked files present (use "git add" to track)');
+      else if (!staged && unstaged) out.push('', 'no changes added to commit (use "git add" and/or "git commit -a")');
+      else if (!staged && !unstaged) out.push('nothing to commit, working tree clean');
+      return out;
+    }
+    function run(cmd) {
+      let out = [];
+      if (cmd === 'edit') { st.work = (st.work + 1) % LINES.length; if (st.work === st.index && st.index !== null) st.work = (st.work + 1) % LINES.length; st.term = ['(you changed a line in Bill.java and saved)']; draw(); return; }
+      if (cmd === 'status') out = statusText();
+      if (cmd === 'add') { st.index = st.work; }
+      if (cmd === 'commit') {
+        if (st.index !== null && st.index !== st.head) {
+          const id = ids[st.commits.length % ids.length], first = !st.commits.length;
+          const msg = first ? 'Bill: GST to the nearest paisa' : 'Bill: change the tax line (' + (st.commits.length + 1) + ')';
+          st.commits.unshift({ id, msg, line: st.index });
+          out = ['[main ' + (first ? '(root-commit) ' : '') + id + '] ' + msg, first ? ' 1 file changed, 1 insertion(+)' : ' 1 file changed, 1 insertion(+), 1 deletion(-)'];
+          if (first) out.push(' create mode 100644 ' + FILE);
+          st.head = st.index;
+        } else out = statusText();
+      }
+      if (cmd === 'diff') {
+        if (st.index !== null && st.work !== st.index) out = ['diff --git a/' + FILE + ' b/' + FILE, '--- a/' + FILE, '+++ b/' + FILE, '@@ -9,7 +9,7 @@', '-        ' + LINES[st.index], '+        ' + LINES[st.work]];
+        else out = ['(no output: nothing changed since it was last added or saved' + (st.index === null ? ', and git diff ignores files Git has never saved)' : ')')];
+      }
+      if (cmd === 'restore') { if (st.index === null) out = ["error: pathspec '" + FILE + "' did not match any file(s) known to git"]; else st.work = st.index; }
+      if (cmd === 'log') out = st.commits.length ? st.commits.map(c => c.id + ' ' + c.msg) : ["fatal: your current branch 'main' does not have any commits yet"];
+      const typed = { status: 'git status', add: 'git add ' + FILE, commit: 'git commit -m "..."', diff: 'git diff ' + FILE, restore: 'git restore ' + FILE, log: 'git log --oneline' }[cmd];
+      st.term = ['$ ' + typed].concat(out.length ? out : ['(no output: it worked)']);
+      draw();
+    }
+    function card(title, line, hint) { return '<div class="gpcol"><div class="gphead">' + title + '</div>' + (line === null ? '<div class="gpempty">' + hint + '</div>' : '<div class="gpfile"><b>Bill.java</b><code>' + esc(LINES[line]) + '</code></div>') + '</div>'; }
+    function draw() {
+      cols.innerHTML = card('1. Your folder', st.work, '') + '<div class="gparrow">git add →</div>' + card('2. Staging area', st.index !== null && st.index !== st.head ? st.index : null, 'empty: nothing chosen') + '<div class="gparrow">git commit →</div>'
+        + '<div class="gpcol"><div class="gphead">3. History</div>' + (st.commits.length ? st.commits.map((c, i) => '<div class="gpfile' + (i ? ' old' : '') + '"><b>' + c.id + '</b> ' + esc(c.msg) + '<code>' + esc(LINES[c.line]) + '</code></div>').join('') : '<div class="gpempty">no snapshots yet</div>') + '</div>';
+      term.textContent = st.term.length ? st.term.join('\n') : 'Press a button. The terminal shows what Git would answer.';
+    }
+    [['Change the file', 'edit'], ['git status', 'status'], ['git add', 'add'], ['git commit', 'commit'], ['git diff', 'diff'], ['git restore', 'restore'], ['git log --oneline', 'log']].forEach(([l, c]) => buttons.append(btn(l, c === 'edit' ? 'primary' : 'mono', () => run(c))));
+    buttons.append(btn('Start over', '', () => { Object.assign(st, fresh()); draw(); }));
+    node.append(cols, buttons, term);
+    draw();
+  }
+
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget, overflow: overflowWidget, convert: convertWidget, gitplay: gitPlayWidget };
 
   window.Lab = {
     marks: marksApi,

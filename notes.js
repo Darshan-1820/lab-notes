@@ -1289,6 +1289,18 @@ int move = keys.nextInt();</pre>
     date: '2026-10-18',
     title: 'Why there is no 0.54 of a paisa: long, double and BigDecimal compared',
     from: 'Week 2, lesson 2: Tax to the nearest paisa',
+    widgets: {
+      'q-bigdecimal': {
+        code: ['BigDecimal price = new BigDecimal("1003");', 'BigDecimal times = price.multiply(new BigDecimal("18"));', 'BigDecimal gst = times.divide(new BigDecimal("100"));', 'BigDecimal paise = gst.setScale(0, RoundingMode.HALF_UP);', 'System.out.println(paise);'],
+        steps: [
+          { line: 0, vars: { price: '1003' }, out: [], note: 'A BigDecimal box called price, holding exactly 1003. The quotes hand the digits over as text.' },
+          { line: 1, vars: { price: '1003', times: '18054' }, out: [], note: 'price.multiply(...) means price × 18. The answer comes back as a new BigDecimal: 18054.' },
+          { line: 2, vars: { price: '1003', times: '18054', gst: '180.54' }, out: [], note: 'divide by 100. A long would cut this to 180. BigDecimal keeps every digit: 180.54, exactly.' },
+          { line: 3, vars: { price: '1003', times: '18054', gst: '180.54', paise: '181' }, out: [], note: 'Now the rounding decision. setScale(0, ...) means "keep 0 digits after the point". HALF_UP means .5 and above go up. 180.54 becomes 181.' },
+          { line: 4, vars: { price: '1003', times: '18054', gst: '180.54', paise: '181' }, out: ['181'], note: 'Same answer as the long trick (18054 + 50) / 100. Two routes, one result.' },
+        ],
+      },
+    },
     asked: 'Money cannot have 0.54 of a paisa, -> Why? Because Int division does not store point/decimal values? Gap again. This is confusing. What happens if I store money as long and then divide? Or big decimal and then do the maths? How to multiply this in my head quickly? 1003 * 18 ?? With basis points you divide by 10000, so half is 5000. -> Did not understand. (later) Did not understand much about the basis points.',
     html: `
 <h3>The short answer</h3>
@@ -1299,25 +1311,28 @@ int move = keys.nextInt();</pre>
 </ol>
 <p>Reason 1 means we <i>must</i> round to whole paise. Reason 2 means plain division would quietly round <i>down</i> for us. So the lesson makes the rounding a choice you write on purpose.</p>
 
-<h3>What happens with each way of storing it (all run in Java 17)</h3>
+<h3>Long, double, BigDecimal: three calculators</h3>
+<p>Think of three calculators doing the same sum, 18% of 1003 paise. The exact answer is 180.54.</p>
 <div class="tablewrap"><table class="plain">
-<tr><th>Code</th><th>Prints</th><th>Verdict</th></tr>
-<tr><td><code>long price = 1003;</code> <code>price * 18 / 100</code></td><td><code>180</code></td><td>Exact, but always rounded down: 0.54 paisa lost per bill</td></tr>
-<tr><td><code>price * 18 % 100</code></td><td><code>54</code></td><td>The cut-off part, if you want to look at it</td></tr>
-<tr><td><code>(price * 18 + 50) / 100</code></td><td><code>181</code></td><td>Exact and rounded to the nearest: what lesson 2 teaches</td></tr>
-<tr><td><code>price * 18 / 100.0</code></td><td><code>180.54</code></td><td>Done in double. Looks right here, but doubles aren't exact in general (0.1 + 0.2). Not for money.</td></tr>
-<tr><td>BigDecimal: <code>1003 × 18 ÷ 100</code></td><td><code>180.54</code></td><td>Exact decimal digits</td></tr>
-<tr><td>BigDecimal, then <code>.setScale(0, RoundingMode.HALF_UP)</code></td><td><code>181</code></td><td>Exact, rounded by a rule you name</td></tr>
+<tr><th>Calculator</th><th>How it works inside</th><th>Gives</th><th>Good for money?</th></tr>
+<tr><td><b>long</b></td><td>Whole numbers only. When it divides, it cuts off everything after the point.</td><td><code>180</code></td><td>Yes: exact. But you must choose how to round yourself (add half first).</td></tr>
+<tr><td><b>double</b></td><td>Stores numbers with a point, built from halves, quarters, eighths... (lesson 1). Most decimals are stored as "very close", not exact.</td><td><code>180.54</code></td><td>No. It looks right here, but tiny errors add up: ten 0.1s give 0.9999999999999999.</td></tr>
+<tr><td><b>BigDecimal</b></td><td>Stores the decimal digits themselves, like you write them on paper: 1, 8, 0, point, 5, 4.</td><td><code>180.54</code></td><td>Yes: exact. Ten 0.1s give exactly 1.0. You still choose the rounding at the end.</td></tr>
 </table></div>
-<p>The BigDecimal lines in full, for later (they use objects, <span class="later">coming in weeks 4 to 5</span>):</p>
-<pre>BigDecimal gst = new BigDecimal("1003")
-        .multiply(new BigDecimal("18"))
-        .divide(new BigDecimal("100"));          // 180.54
-BigDecimal paid = gst.setScale(0, RoundingMode.HALF_UP);   // 181</pre>
+<p><b>The key point.</b> BigDecimal doesn't make 0.54 of a paisa payable. It just keeps 180.54 exactly while you calculate. When the bill is printed you still round it to whole paise, and you have to say how.</p>
 
-<h3>So is BigDecimal better?</h3>
-<p>It keeps exact decimals while you calculate, which helps when a sum has many steps (interest, then tax, then a discount) and you want to round only once at the end. It does <b>not</b> remove the rounding decision. The bill still needs whole paise, so you still call <code>setScale</code> with a rounding rule. It even forces the choice: <code>new BigDecimal("100").divide(new BigDecimal("3"))</code> throws <code>Non-terminating decimal expansion; no exact representable decimal result.</code> because 33.333... never ends. You must say how many digits and how to round: <code>divide(three, 2, RoundingMode.HALF_UP)</code> gives 33.33.</p>
-<p>Long paise: fast, simple, exact, and you round with "add half, then divide". BigDecimal: exact decimals, slower and wordier, with named rounding rules. Banks use both. Spring Boot projects later will use BigDecimal; this week stays with long so you see every step.</p>
+<h3>What BigDecimal code looks like, line by line</h3>
+<p>You don't need to write this yet. It uses objects, <span class="later">coming in weeks 4 to 5</span>. But you should be able to read it. Press Next to step through it:</p>
+<div data-widget="stepper" data-ref="q-bigdecimal"></div>
+<p>Three new things in it, each in one line:</p>
+<ul>
+<li><code>new BigDecimal("1003")</code> makes a BigDecimal holding 1003. The number goes in double quotes, as text, so Java never turns it into a double first. (Without quotes, <code>new BigDecimal(0.1)</code> holds 0.1000000000000000055511151231257827021181583404541015625: the double's error is copied in.)</li>
+<li><code>price.multiply(x)</code> means price × x. With BigDecimal you can't write <code>*</code>, <code>+</code> or <code>/</code>. You call a method instead: <code>add</code>, <code>subtract</code>, <code>multiply</code>, <code>divide</code>. Each one gives back a new BigDecimal with the answer.</li>
+<li><code>setScale(0, RoundingMode.HALF_UP)</code>: "scale" means how many digits after the point to keep. 0 means none, so whole paise. <code>HALF_UP</code> is the rounding rule: .5 and above goes up. <code>DOWN</code> would give 180, the same as long division.</li>
+</ul>
+
+<h3>Which one should I use?</h3>
+<p>This week: <b>long paise</b>. It's simple, fast, exact, and you can see every step. Later, in Spring Boot projects: <b>BigDecimal</b>, which most banking code uses. <b>double</b>: never for money.</p>
 
 <h3>What a basis point is</h3>
 <p>Percent means "out of 100". Rates like 12.5% have a point, and a long can't hold a point. So we use the same trick as paise: 1 rupee = 100 paise, and <b>1% = 100 basis points</b>. One basis point is a hundredth of a percent.</p>
