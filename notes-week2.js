@@ -335,6 +335,15 @@ long right = (long) price * 3;   // 6000000000: one side widened before multiply
 <tr><td>Rounding a negative amount (a refund) with the same trick</td><td>No error. Java's division throws the leftover away towards zero, so -180.54 comes out as -180, not -181.</td></tr>
 </table></div>
 
+<h3>Two things to know before you write Bill.java</h3>
+<p><b>1. Read the rate into an int, not a long.</b> Lesson 1 taught you to keep money in a long. The rate isn't money, though. It's a small number of basis points, and <code>percentOf</code> asks for an <code>int</code>. If you read it with <code>nextLong()</code> into a long and pass it in, Java 17 refuses:</p>
+<pre>error: method percentOf in class Bill cannot be applied to given types;
+  required: long,int
+  found:    long,long
+  reason: argument mismatch; possible lossy conversion from long to int</pre>
+<p>Read it as <code>int rate = keys.nextInt();</code>. The message is the narrowing rule from the note "Type conversion, overflow and autoboxing": a long into an int slot is refused.</p>
+<p><b>2. A correction to the lesson's "Break it".</b> It says that dropping <code>+ 5000</code> loses ₹10,000 a day over a million bills. That's too high. Without <code>+ 5000</code> a paisa is lost only when the part after the point is .5 or more, which is about half of all bills. So it's about <b>₹5,000 a day</b>: still real money, and still nobody sees an error. (Checked by running every price from 1 to 100,000 paise at 18%: on average 0.5 paisa is lost per bill.)</p>
+
 <h3>Check yourself</h3>
 <details><summary>How many basis points is 7.25%?</summary><p>725. One percent is 100 basis points.</p></details>
 <details><summary>What is <code>(1001 * 1800 + 5000) / 10000</code>, and is it rounded the right way?</summary><p>180. The exact value is 180.18, and the nearest whole paisa is 180, so yes.</p></details>

@@ -83,6 +83,7 @@
     const values = [4500, 3800, 5200, 4100, 3900, 6100, 3000, 4500, 4700, 8000, 3500, 4000];
     if (!state[key]) state[key] = { i: 3 };
     const st = state[key], START = 1000;
+    st.bad = '';   // the box is drawn with st.i, so start without an old message
     node.innerHTML = ''; node.className = 'bitsbox';
     const line = el('div', 'wline');
     const input = el('input'); input.type = 'number'; input.id = key + '-i'; input.value = st.i; input.setAttribute('aria-label', 'Index');
@@ -96,15 +97,25 @@
         c.append(el('div', 'i', '[' + i + ']'), el('div', 'v', String(v)), el('div', 'a', String(START + i * 8)));
         cells.append(c);
       });
-      if (st.i >= 0 && st.i < values.length) {
+      if (st.bad) {
+        msg.innerHTML = st.bad;
+      } else if (st.i >= 0 && st.i < values.length) {
         msg.innerHTML = 'Address = start + index × 8 = <span class="num">' + START + ' + ' + st.i + ' × 8 = ' + (START + st.i * 8) + '</span>. That cell holds <span class="num">' + values[st.i] + '</span>.<br><span class="muted">One multiplication and one addition, whichever box you ask for. Index 0 is zero steps from the start.</span>';
       } else {
         msg.innerHTML = '<span class="w2-err">ArrayIndexOutOfBoundsException: Index ' + st.i + ' out of bounds for length ' + values.length + '</span><br><span class="muted">Address ' + (START + st.i * 8) + ' is outside this row. It may belong to something else, so Java refuses.</span>';
       }
     }
-    input.addEventListener('input', () => { const v = Math.trunc(Number(input.value)); if (!Number.isNaN(v)) { st.i = Math.max(-5, Math.min(20, v)); draw(); } });
+    // Never change what he typed: a value the diagram cannot use gets a message instead.
+    input.addEventListener('input', () => {
+      const raw = input.value.trim(), v = Number(raw);
+      st.bad = raw === '' ? 'Type an index: a whole number such as 0, 5 or 11.'
+        : !Number.isInteger(v) ? 'An index is a whole number of steps from the start, so it has no point in it. Try ' + Math.trunc(v) + '.'
+        : Math.abs(v) > 2147483647 ? 'That is bigger than an int can hold, and an index is an int. Try a smaller number.' : '';
+      if (!st.bad) st.i = v;
+      draw();
+    });
     const row = el('div', 'wrow');
-    row.append(btn('First', '', () => { st.i = 0; input.value = 0; draw(); }), btn('Last', '', () => { st.i = 11; input.value = 11; draw(); }), btn('One too far', '', () => { st.i = 12; input.value = 12; draw(); }));
+    row.append(btn('First', '', () => { st.bad = ''; st.i = 0; input.value = 0; draw(); }), btn('Last', '', () => { st.bad = ''; st.i = 11; input.value = 11; draw(); }), btn('One too far', '', () => { st.bad = ''; st.i = 12; input.value = 12; draw(); }));
     node.append(line, cells, msg, row, el('div', 'muted', 'The addresses are made up for the picture. Each box is 8 bytes because a long is 64 switches.'));
     draw();
   }

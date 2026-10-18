@@ -1246,6 +1246,43 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'why-5000-not-50',
+    date: '2026-10-18',
+    title: 'Why + 5000 and not + 50?',
+    from: 'Week 2, lesson 2: Tax to the nearest paisa',
+    asked: 'Why are we doing 5000 and not 50?',
+    widgets: {
+      'q-5000': {
+        code: ['long big = 1003 * 1800;', 'long right = (big + 5000) / 10000;', 'long wrong = (big + 50) / 10000;'],
+        steps: [
+          { line: 0, vars: { big: 1805400 }, out: [], note: 'Price × rate in basis points. This number is 10,000 times too big: the real tax is 180.54 paise.' },
+          { line: 1, vars: { big: 1805400, right: 181 }, out: [], note: '1,805,400 + 5,000 = 1,810,400. ÷ 10,000 = 181.04, cut to 181. The 5,000 was worth half a paisa, enough to push .54 up.' },
+          { line: 2, vars: { big: 1805400, right: 181, wrong: 180 }, out: [], note: '1,805,400 + 50 = 1,805,450. ÷ 10,000 = 180.545, cut to 180. The 50 was worth only 0.005 of a paisa, too small to change anything.' },
+        ],
+      },
+    },
+    html: `
+<h3>The short answer</h3>
+<p>The rule is: <b>add half of the number you divide by.</b> Lesson 2's predict divided by 100, so it added 50. <code>percentOf</code> divides by <b>10,000</b>, so it adds half of 10,000: <b>5,000</b>.</p>
+
+<h3>Why the size of "half" changes</h3>
+<p>You want to add <b>half a paisa</b> before cutting. How much "half a paisa" is depends on the units the number is in at that moment. You already know this from money: to add half a rupee to an amount kept in paise, you add <b>50</b>, not 0.5, because the amount is counted in hundredths.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Before dividing, the number is counted in</th><th>Then divide by</th><th>Half a paisa is</th></tr>
+<tr><td>hundredths of a paisa (percent: 1003 × 18 = 18,054)</td><td>100</td><td><b>50</b></td></tr>
+<tr><td>ten-thousandths of a paisa (basis points: 1003 × 1800 = 1,805,400)</td><td>10,000</td><td><b>5,000</b></td></tr>
+</table></div>
+<p>With basis points the multiplied number is 100 times bigger (1800 instead of 18), so half a paisa is 100 times bigger too: 50 × 100 = 5,000.</p>
+
+<h3>Watch both</h3>
+<div data-widget="stepper" data-ref="q-5000"></div>
+
+<h3>Check yourself</h3>
+<details><summary>A program divides by 1,000 at the end. What does it add to round to the nearest?</summary><p>500, half of 1,000.</p></details>
+<details><summary>To round 25 ÷ 12 to the nearest whole number with long division, what do you add first?</summary><p>6, half of 12: (25 + 6) / 12 = 31 / 12 = 2. Check: 25 ÷ 12 = 2.08, nearest is 2.</p></details>`,
+  },
+
+  {
     id: 'paise-typed-input',
     date: '2026-10-18',
     title: 'What a paisa is, and how the till reads one price per line',
