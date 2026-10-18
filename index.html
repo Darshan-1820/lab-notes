@@ -82,13 +82,16 @@
 
 <script src="week1-game.js"></script>
 <script src="week2-money.js"></script>
+<script src="sql1.js"></script>
 <script src="rematches.js"></script>
 <script src="notes.js"></script>
 <script src="notes-week2.js"></script>
+<script src="notes-sql.js"></script>
 <script src="plan.js"></script>
 <script src="math-data.js"></script>
 <script src="widgets.js"></script>
 <script src="widgets-week2.js"></script>
+<script src="widgets-sql.js"></script>
 <script src="math.js"></script>
 <script>
 (function () {
@@ -245,7 +248,7 @@
     const key = m.id + ':' + i, card = el('div', 'card predict');
     function draw() {
       card.innerHTML = '';
-      card.append(el('div', 'tag', 'Predict'), el('div', '', 'What does this print? Work it out in your head.'), el('pre', '', esc(b.code)));
+      card.append(el('div', 'tag', 'Predict'), el('div', '', b.ask || 'What does this print? Work it out in your head.'), el('pre', '', esc(b.code)));
       if (!(key in answered)) {
         const ta = el('textarea'); ta.id = 'p-' + m.id + '-' + i; ta.setAttribute('aria-label', 'Your prediction'); ta.placeholder = 'Type exactly what you think appears on the screen';
         const go = el('button', 'primary', 'Lock in my answer'); go.type = 'button';
@@ -254,7 +257,7 @@
         card.append(ta, row);
       } else {
         const right = clean(answered[key]).join('\n') === clean(b.answer).join('\n');
-        card.append(el('div', 'muted', 'You said'), el('pre', '', esc(answered[key])), el('div', 'muted', 'It prints'), el('pre', '', esc(b.answer)));
+        card.append(el('div', 'muted', 'You said'), el('pre', '', esc(answered[key])), el('div', 'muted', b.ask ? 'The answer' : 'It prints'), el('pre', '', esc(b.answer)));
         card.append(el('div', right ? 'good' : 'muted', right ? 'Correct.' : 'Not this time. The walk-through below shows where it went differently.'));
       }
     }
@@ -278,6 +281,14 @@
       else if (b.t === 'predict') body.append(predict(m, i, b));
       else if (b.t === 'deeper') { const d = el('details', 'card'); d.append(el('summary', '', 'Go deeper: ' + esc(b.title)), el('div', '', b.html)); body.append(d); }
       else if (b.t === 'try' || b.t === 'run') { const c = el('div', 'card try'); c.append(el('div', 'tag', 'Experiment · on your computer'), el('div', '', b.html)); body.append(c); }
+      else if (b.t === 'sqltry' || b.t === 'sqltask') {
+        // SQL runs only in the lab on the computer: show the text and the starting query.
+        const c = el('div', b.t === 'sqltask' ? 'card task' : 'card try');
+        c.append(el('div', 'tag', (b.t === 'sqltask' ? 'Build: your query' : b.experiment ? 'Experiment' : 'Run a query') + ' · on your computer'));
+        if (b.html) c.append(el('div', '', b.html));
+        if (b.sql || b.start) c.append(el('pre', '', esc(b.sql || b.start)));
+        body.append(c);
+      }
       else if (b.t === 'task') {
         const c = el('div', 'card task');
         c.append(el('div', 'tag', (b.timed ? 'Timed challenge' : 'Build') + ' · on your computer'));

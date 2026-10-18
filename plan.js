@@ -32,6 +32,12 @@ window.PLAN = {
       ],
     },
     {
+      by: 'SQL night: Sunday 18 October (about 45 minutes)',
+      items: [
+        { text: 'SQL lesson 1: The map, what a database is. It is in the list under "SQL: Databases from zero" and does not wait for Java. Finish the Java lesson you are in first.', missions: ['sql1m1'] },
+      ],
+    },
+    {
       by: 'Saturday 17 (opens that day, not before)',
       items: [
         { text: 'Rematch 1: level up. No hints, no AI, no notes. Do the five steps from "How to read a problem" first, and work List 2 out by hand.', missions: ['w1r1'] },
