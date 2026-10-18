@@ -42,6 +42,7 @@
 //   seedmachine  java.util.Random with Java's exact formula, one roll at a time (data-seed, data-n, data-k)
 //   convert   pick from-type, to-type and a value: widening or narrowing, Java's message, the result (data-from, data-to, data-value)
 //   gitplay   a pretend repo: buttons for edit/status/add/commit/diff/restore/log, three areas drawn, real Git messages
+//   roundline  an exact answer on a number line between two whole numbers, and what each rounding rule gives (data-value)
 //   overflow  a byte/short/int/long box plus a number: the real answer, what Java stores, where it wraps (data-type, data-total, data-add)
 
 (function () {
@@ -210,6 +211,11 @@
   .pxgrid.small .px { border: 0; border-radius: 0; width: 1px; height: 1px; aspect-ratio: auto; }
   .money .wline input { width: 160px; }
   .overflow .wline input { width: 190px; }
+  .roundline .wline input { width: 150px; }
+  .roundline .wrow button { font-size: 14px; padding: 5px 10px; }
+  .rlbar { position: relative; height: 12px; margin: 16px 4px 2px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--line); }
+  .rlmid { position: absolute; left: 50%; top: -5px; width: 2px; height: 22px; margin-left: -1px; background: var(--warn); }
+  .rlmark { position: absolute; top: -7px; width: 14px; height: 24px; margin-left: -7px; border-radius: 4px; background: var(--accent); }
   .convert .wrow button, .gitplay .wrow button { font-size: 14px; padding: 6px 10px; }
   .convert .wline input { width: 190px; }
   .cvboxes { display: grid; gap: 4px; margin: 6px 0 4px; }
@@ -1737,7 +1743,53 @@
     draw();
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget, overflow: overflowWidget, convert: convertWidget, gitplay: gitPlayWidget };
+
+  // ---- rounding on a number line: <div data-widget="roundline" data-key data-value="180.54"> ----
+  // Exact integer arithmetic on ten-thousandths. Results match Java 17 BigDecimal setScale(0, HALF_UP / HALF_EVEN / DOWN)
+  // and the long trick (x + half) / divisor, checked 2026-10-18 for 180.54, 180.49, 180.5, 181.5, 2.5, 0.5, -180.54, -180.5, -0.5.
+  function roundLineWidget(node) {
+    const key = node.dataset.key;
+    if (!state[key]) state[key] = { v: node.dataset.value || '180.54' };
+    const st = state[key];
+    node.innerHTML = ''; node.className = 'bitsbox roundline';
+    const line = el('div', 'wline', '<span>Exact answer</span>');
+    const input = el('input'); input.type = 'text'; input.inputMode = 'decimal'; input.value = st.v; input.setAttribute('aria-label', 'Exact answer');
+    line.append(input);
+    const quick = el('div', 'wrow');
+    ['180.3', '180.8', '180.5', '181.5', '2.5', '-180.54'].forEach(x => quick.append(btn(x, '', () => { input.value = x; draw(); })));
+    const out = el('div', 'meanings');
+    function draw() {
+      st.v = input.value.trim();
+      const m = st.v.match(/^(-?)(\d{1,9})(?:\.(\d{1,4}))?$/);
+      if (!m) { out.innerHTML = '<div class="bitmsg">Type a number like 180.54 or -2.5 (up to 4 digits after the point).</div>'; return; }
+      const neg = m[1] === '-' && (Number(m[2]) > 0 || /[1-9]/.test(m[3] || ''));
+      const mag = Number(m[2]) * 10000 + Number((m[3] || '').padEnd(4, '0'));
+      const q = Math.floor(mag / 10000), r = mag % 10000, sg = neg ? -1 : 1;
+      const fix = n => (n === 0 ? 0 : n);
+      const down = fix(sg * q);
+      const up = fix(sg * (r >= 5000 ? q + 1 : q));
+      const even = fix(sg * (r > 5000 ? q + 1 : r < 5000 ? q : q + (q % 2)));
+      const v = sg * mag, t = v + 5000, trick = fix(t < 0 ? -Math.floor(-t / 10000) : Math.floor(t / 10000));
+      const lo = q, hi = q + 1, pct = r / 100;
+      const shown = (neg ? '-' : '') + q + (r ? '.' + String(r).padStart(4, '0').replace(/0+$/, '') : '');
+      const where = r === 0 ? 'It is already a whole number: nothing to round.' : r === 5000 ? '<b>Exactly halfway</b> between ' + (neg ? '-' + lo : lo) + ' and ' + (neg ? '-' + hi : hi) + ': a tie. This is the only case where the rules disagree.' : 'Nearer to <b>' + (neg ? '-' : '') + (r > 5000 ? hi : lo) + '</b> (' + (r > 5000 ? (10000 - r) / 10000 : r / 10000) + ' away).';
+      const ends = neg ? ['-' + hi, '-' + lo] : [String(lo), String(hi)];
+      const pos = neg ? 100 - pct : pct;
+      out.innerHTML = '<div class="rlbar"><span class="rlmid"></span><span class="rlmark" style="left:' + pos + '%"></span></div>'
+        + '<div class="ovends"><span>' + ends[0] + '</span><span>halfway</span><span>' + ends[1] + '</span></div>'
+        + '<div>' + shown + ': ' + where + '</div>'
+        + '<div class="tablewrap"><table class="plain"><tr><th>Rule</th><th>Gives</th></tr>'
+        + '<tr><td><b>Half up</b> (a tie goes away from zero)</td><td><b>' + up + '</b></td></tr>'
+        + '<tr><td><b>Half to even</b> (a tie goes to the even neighbour)</td><td><b>' + even + '</b></td></tr>'
+        + '<tr><td><b>Down</b> (drop the part after the point)</td><td><b>' + down + '</b></td></tr>'
+        + '<tr><td>The long trick: (x + half) / divisor</td><td><b' + (trick !== up ? ' class="bad"' : '') + '>' + trick + '</b>' + (trick !== up ? ' <span class="bad">(not the nearest: negative trap)</span>' : '') + '</td></tr></table></div>';
+    }
+    input.addEventListener('input', draw);
+    node.append(line, quick, out);
+    draw();
+  }
+
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget, overflow: overflowWidget, convert: convertWidget, gitplay: gitPlayWidget, roundline: roundLineWidget };
 
   window.Lab = {
     marks: marksApi,

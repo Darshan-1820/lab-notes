@@ -1246,6 +1246,76 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'rounding-from-zero',
+    date: '2026-10-18',
+    title: 'Rounding from zero: what "half rounds up" means, with examples',
+    from: 'Week 2, lesson 2: the deeper part "Rounding is a decision, not a detail"',
+    asked: '"Half rounds up"? What does that even mean? And please use examples, I did not get anything.',
+    html: `
+<h3>1. What rounding is</h3>
+<p>The exact GST was 180.54 paise, but a bill can only show whole paise. So we pick the <b>nearest whole number</b>. 180.54 sits between 180 and 181:</p>
+<pre>180 ----|----|----|----|----|----|----|----|----|----|---- 181
+                                  ↑
+                                180.54   (0.54 past 180, only 0.46 short of 181)</pre>
+<p>It is nearer to 181, so it rounds to <b>181</b>. More examples:</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Exact</th><th>Nearer to</th><th>Rounds to</th></tr>
+<tr><td>180.3</td><td>180 (0.3 away; 181 is 0.7 away)</td><td><b>180</b></td></tr>
+<tr><td>180.8</td><td>181 (0.2 away)</td><td><b>181</b></td></tr>
+<tr><td>180.54</td><td>181 (0.46 away)</td><td><b>181</b></td></tr>
+<tr><td>180.49</td><td>180 (0.49 away)</td><td><b>180</b></td></tr>
+</table></div>
+<p>All of those are easy, because one side is clearly nearer.</p>
+
+<h3>2. The one hard case: exactly half</h3>
+<p>What about <b>180.5</b>? It is 0.5 from 180 <i>and</i> 0.5 from 181. Neither is nearer. It's a tie, so somebody has to make a rule. <b>"Half rounds up"</b> is that rule: <b>when it's exactly halfway, go to the bigger number.</b></p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Exact</th><th>Half up gives</th></tr>
+<tr><td>180.5</td><td>181</td></tr>
+<tr><td>2.5</td><td>3</td></tr>
+<tr><td>0.5</td><td>1</td></tr>
+</table></div>
+<p>That's all it means. It only matters for the .5 case; everything else just goes to the nearer side. Lesson 2's "Bill 3: exactly half a paisa" tests this: 18% of 25 paise is exactly 4.5, and the bill must show 5.</p>
+<p><b>Try it.</b> Type any amount or press a button. The green block shows where the amount sits between the two whole numbers; the orange line is halfway.</p>
+<div data-widget="roundline" data-key="q-roundline" data-value="180.54"></div>
+
+<h3>3. Why anyone would pick a different tie rule</h3>
+<p>Imagine four tiny bills whose exact tax is 0.5, 1.5, 2.5 and 3.5 paise. The true total is 0.5 + 1.5 + 2.5 + 3.5 = <b>8</b> paise.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Exact</th><th>Half up</th><th>Half to even</th><th>Down</th></tr>
+<tr><td>0.5</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>1.5</td><td>2</td><td>2</td><td>1</td></tr>
+<tr><td>2.5</td><td>3</td><td>2</td><td>2</td></tr>
+<tr><td>3.5</td><td>4</td><td>4</td><td>3</td></tr>
+<tr><td><b>Total</b></td><td><b>10</b> (2 too many)</td><td><b>8</b> (right)</td><td><b>6</b> (2 too few)</td></tr>
+</table></div>
+<ul>
+<li><b>Half up</b> sends every tie upwards, so over many bills the total creeps up.</li>
+<li><b>Half to even</b> ("banker's rounding") sends a tie to whichever neighbour is even: 0.5 → 0, 1.5 → 2, 2.5 → 2, 3.5 → 4. Half the ties go down and half go up, so they cancel out.</li>
+<li><b>Down</b> just drops the part after the point, which is what plain <code>/</code> does. Every bill loses a little.</li>
+</ul>
+<p>Which rule is correct isn't for the programmer to pick. The tax rules or the bank's rules say which one, and your job is to find out. This week the rule is half up.</p>
+
+<h3>4. The trap with negative amounts (refunds)</h3>
+<p>A refund is money going back, written with a minus. Refunding a ₹10.03 item gives back 18% of it: exactly <b>-180.54</b> paise of GST. The nearest whole number is <b>-181</b> (just as 180.54 → 181, only on the minus side).</p>
+<p>Now the long trick from lesson 2:</p>
+<pre>(-1003 × 1800 + 5000) / 10000
+= (-1805400 + 5000) / 10000
+= -1800400 / 10000
+= -180.04  →  Java drops the .04  →  -180     ✗ (should be -181)</pre>
+<p>Why it fails: "add 5000" means "push half a paisa <i>upwards</i>". For a positive number, upwards is away from zero, so that's correct. For a negative number, upwards is <i>towards</i> zero, which is the wrong direction. Java's <code>/</code> also always drops the leftover towards zero: <code>-7 / 2</code> is <code>-3</code> (not -4), and <code>-7 % 2</code> is <code>-1</code>.</p>
+<p><b>The fix:</b> round the size without the minus, then put the minus back:</p>
+<pre>1805400 + 5000 = 1810400,  / 10000 = 181,  then put the minus back: -181   ✓</pre>
+<p>Type -180.54 into the widget above to see the trick go wrong in red.</p>
+
+<h3>Check yourself</h3>
+<details><summary>Round 47.5 with half up.</summary><p>48. It's exactly halfway, and half up goes to the bigger number.</p></details>
+<details><summary>Round 47.5 with half to even.</summary><p>48: 47 is odd, 48 is even. And 46.5 gives 46.</p></details>
+<details><summary>Round 47.49 with any of the three rules except down.</summary><p>47. It isn't a tie; 47 is nearer. Tie rules only matter at exactly .5.</p></details>
+<details><summary>Why does "add half, then divide" go wrong for a refund?</summary><p>Adding half pushes the number upwards, which for a negative number means towards zero. Round the positive size, then put the minus back.</p></details>`,
+  },
+
+  {
     id: 'bill-who-returns-what',
     date: '2026-10-18',
     title: 'Bill.java: what the method gives back, and what main does with it',
