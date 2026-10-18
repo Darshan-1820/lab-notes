@@ -378,6 +378,11 @@ long right = (long) price * 3;   // 6000000000: one side widened before multiply
 <p>The money idea: <b>simple interest</b> is paid only on what you put in. <b>Compound interest</b> is added to the balance, so the next interest is worked out on a bigger amount. Interest earns interest, and the gap grows every year.</p>
 <div data-widget="growth" data-key="c15-growth"></div>
 
+<h3>Simple vs compound, month by month</h3>
+<p>₹1,000 at 12% a year, which is 1% a month. Compound interest is rounded to the nearest paisa each month, exactly as your Growth.java does.</p>
+<div class="tablewrap"><table class="plain"><tr><th>Month</th><th>Simple interest</th><th>Simple balance</th><th>Compound interest</th><th>Compound balance</th></tr><tr><td>1</td><td>₹10.00</td><td>₹1,010.00</td><td>₹10.00</td><td>₹1,010.00</td></tr><tr><td>2</td><td>₹10.00</td><td>₹1,020.00</td><td>₹10.10</td><td>₹1,020.10</td></tr><tr><td>3</td><td>₹10.00</td><td>₹1,030.00</td><td>₹10.20</td><td>₹1,030.30</td></tr><tr><td>4</td><td>₹10.00</td><td>₹1,040.00</td><td>₹10.30</td><td>₹1,040.60</td></tr><tr><td>5</td><td>₹10.00</td><td>₹1,050.00</td><td>₹10.41</td><td>₹1,051.01</td></tr><tr><td>6</td><td>₹10.00</td><td>₹1,060.00</td><td>₹10.51</td><td>₹1,061.52</td></tr><tr><td>7</td><td>₹10.00</td><td>₹1,070.00</td><td>₹10.62</td><td>₹1,072.14</td></tr><tr><td>8</td><td>₹10.00</td><td>₹1,080.00</td><td>₹10.72</td><td>₹1,082.86</td></tr><tr><td>9</td><td>₹10.00</td><td>₹1,090.00</td><td>₹10.83</td><td>₹1,093.69</td></tr><tr><td>10</td><td>₹10.00</td><td>₹1,100.00</td><td>₹10.94</td><td>₹1,104.63</td></tr><tr><td>11</td><td>₹10.00</td><td>₹1,110.00</td><td>₹11.05</td><td>₹1,115.68</td></tr><tr><td>12</td><td>₹10.00</td><td>₹1,120.00</td><td>₹11.16</td><td>₹1,126.84</td></tr></table></div>
+<p>Simple interest is the same ₹10 every month. Compound interest grows every month (₹10.00, ₹10.10, ₹10.20 ... ₹11.16), because each month's 1% is taken of a bigger balance. After a year compound has paid ₹6.84 more.</p>
+
 <h3>The syntax</h3>
 <pre>for (start; keep going while; after each round) {
     ...
