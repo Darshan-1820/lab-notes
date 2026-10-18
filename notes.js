@@ -1261,6 +1261,14 @@ int move = keys.nextInt();</pre>
 <pre>years to double ≈ 72 ÷ interest rate (in %)</pre>
 <p>"≈" means "roughly". It is a quick guess, not an exact answer.</p>
 
+<h3>72 is not years</h3>
+<p>He asked: "Is it only for 72 years or for any year?" The 72 is a fixed number in the shortcut and never changes. You change the rate, and the answer is the years:</p>
+<pre>rate 12%  →  72 ÷ 12 = 6 years to double
+rate 8%   →  72 ÷ 8  = 9 years to double
+rate 6%   →  72 ÷ 6  = 12 years to double
+rate 4%   →  72 ÷ 4  = 18 years to double</pre>
+<p>The lesson's experiment ran for 72 <b>months</b> (6 years). That's a different 72, and a coincidence: at 12%, both happen to give 6.</p>
+
 <h3>3. Try it: 12% a year</h3>
 <pre>72 ÷ 12 = 6   → the guess: about 6 years to double</pre>
 <p>Check it the long way. Each year the money grows by 12% of whatever it is now:</p>
