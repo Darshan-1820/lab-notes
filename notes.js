@@ -1270,7 +1270,14 @@ Simple interest: 12000      1000 × 12 months</pre>
 <li>one <b>balance</b> that grows by compound interest, printed every month;</li>
 <li>simple interest, worked out on the starting amount only and printed once at the end (first month's interest × months).</li>
 </ul>
-<p>Your question was a good one. The task text didn't say which balance it meant, and you read the example output to find out, which is exactly what to do.</p>`,
+<p>Your question was a good one. The task text didn't say which balance it meant, and you read the example output to find out, which is exactly what to do.</p>
+
+<h3>"I thought our savings is simple interest"</h3>
+<p>It's a common belief, but a savings account in India is compound, just slower than this lesson's monthly version:</p>
+<pre>interest worked out:  on your balance at the end of each day
+interest added:       every quarter (every 3 months), as RBI rules require
+after it's added:     that interest earns interest next quarter  →  compound</pre>
+<p>Fixed deposits (the "cumulative" kind) are compound too, usually quarterly. Simple interest really shows up in very short FDs (under 6 months), and in some loans quoted at a "flat rate". There, the interest is worked out on the full loan for the whole period, even as you pay it back, so the real cost is higher than the rate looks.</p>`,
   },
 
   {
