@@ -109,4 +109,195 @@ WHERE amount_paise > 100000</pre>
 
 SELECT id, amount_paise FROM payments WHERE amount_paise >= 50000;</pre>8 rows: ids 3, 4, 5, 7, 8, 10, 11 and 12.</div></details>`,
   },
+  {
+    id: 'concept-sql-order-filter',
+    kind: 'concept', lesson: 'sql1m2', order: 102,
+    date: '2026-10-19',
+    title: 'Choosing and sorting rows: ORDER BY, AND / OR, DISTINCT, NULL',
+    from: 'Goes with SQL lesson 2: Choosing and sorting rows',
+    html: `
+<h3>The idea</h3>
+<p>Lesson 1 asked one question of a table. Now you shape the answer: sort it, combine tests, remove repeats, keep the top few, and handle cells with no value (NULL).</p>
+
+<h3>The syntax</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Write</th><th>Meaning</th></tr>
+<tr><td><code>ORDER BY amount_paise</code></td><td>Sort smallest first (ASC is the default)</td></tr>
+<tr><td><code>ORDER BY amount_paise DESC</code></td><td>Sort biggest first</td></tr>
+<tr><td><code>ORDER BY amount_paise DESC, id</code></td><td>Equal amounts are sorted by id</td></tr>
+<tr><td><code>LIMIT 3</code></td><td>Keep the first 3 rows of the answer</td></tr>
+<tr><td><code>WHERE a AND b</code></td><td>Keep a row if both tests say yes</td></tr>
+<tr><td><code>WHERE a OR b</code></td><td>Keep a row if at least one says yes</td></tr>
+<tr><td><code>WHERE NOT a</code></td><td>Flip the test</td></tr>
+<tr><td><code>a AND (b OR c)</code></td><td>Brackets: work out the OR first</td></tr>
+<tr><td><code>SELECT DISTINCT city</code></td><td>Remove repeated rows from the answer</td></tr>
+<tr><td><code>WHERE x IS NULL</code> / <code>IS NOT NULL</code></td><td>The only way to test for "no value"</td></tr>
+<tr><td><code>merchant_id IN (1, 5)</code></td><td>Short for <code>merchant_id = 1 OR merchant_id = 5</code></td></tr>
+</table></div>
+
+<h3>Write it in this order</h3>
+<pre>SELECT id, amount_paise
+FROM payments
+WHERE status = 'APPROVED'
+ORDER BY amount_paise DESC
+LIMIT 3;</pre>
+<p>Out of order, MySQL stops: <code class="bad">ERROR 1064 (42000): ... near 'WHERE status = 'APPROVED'' at line 1</code> (WHERE after ORDER BY).</p>
+
+<h3>MySQL works in a different order</h3>
+<pre>1. FROM       take the table
+2. WHERE      keep rows whose test is yes
+3. SELECT     keep the named columns
+4. DISTINCT   remove repeats
+5. ORDER BY   sort
+6. LIMIT      keep the first few
+
+SELECT DISTINCT merchant_id FROM payments ORDER BY merchant_id DESC LIMIT 2;
+3. 1, 2, 3, 4, 5, 4, 2, 5, 1, 3, 1, 5
+4. 1, 2, 3, 4, 5
+5. 5, 4, 3, 2, 1
+6. 5, 4</pre>
+<p><span class="later">GROUP BY and HAVING, between WHERE and SELECT: coming in the totals lessons</span></p>
+
+<h3>AND before OR</h3>
+<p>Like × before + in maths. Without brackets:</p>
+<pre>status = 'APPROVED' AND merchant_id = 1 OR merchant_id = 5
+= (status = 'APPROVED' AND merchant_id = 1) OR merchant_id = 5
+→ 1, 11, 5, 8, 12      payment 5 is DECLINED but gets in
+
+status = 'APPROVED' AND (merchant_id = 1 OR merchant_id = 5)
+→ 1, 11, 8, 12</pre>
+
+<h3>NULL: no value</h3>
+<p>NULL is not 0 and not empty text. Any comparison with NULL gives "unknown", and WHERE keeps only yes:</p>
+<pre>WHERE refunded_at = NULL            0 rows, no error
+WHERE refunded_at IS NULL           refunds 3, 4
+WHERE reason &lt;&gt; 'changed mind'      1, 4        (NULL reasons 2 and 5 drop out)
+... OR reason IS NULL               1, 2, 4, 5</pre>
+<div data-widget="sqltable" data-key="note-sql2-refunds" data-tables="payments,refunds" data-table="refunds"></div>
+
+<h3>Handy extras</h3>
+<ul>
+<li>No ORDER BY means no promised order. <code>WHERE NOT (merchant_id = 1 OR merchant_id = 5)</code> came back as 2, 7, 3, 10, 4, 6: grouped by shop, because MySQL used its sorted list of merchant ids.</li>
+<li>LIMIT without ORDER BY gives "any" few rows. For a top 3, always sort first.</li>
+<li>DISTINCT works on whole rows: <code>SELECT DISTINCT city, name</code> removes nothing here.</li>
+<li>In MySQL, NULLs sort first with ORDER BY and last with DESC. PostgreSQL (another free database, used later in the plan) puts them last in ascending order.</li>
+<li>Read the unit in the column name before typing a number: <code>amount_paise &gt; 1000</code> means more than ₹10.</li>
+</ul>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Mistake</th><th>What happens</th></tr>
+<tr><td><code>... ORDER BY id WHERE status = 'APPROVED'</code></td><td class="bad">ERROR 1064 (42000): ... near 'WHERE status = 'APPROVED'' at line 1</td></tr>
+<tr><td><code>... LIMIT 3 ORDER BY amount_paise DESC</code></td><td class="bad">ERROR 1064 (42000): ... near 'ORDER BY amount_paise DESC' at line 1</td></tr>
+<tr><td><code>ORDER BY amount DESC</code> (no such column)</td><td class="bad">ERROR 1054 (42S22): Unknown column 'amount' in 'order clause'</td></tr>
+<tr><td><code>SELECT city DISTINCT FROM customers</code></td><td class="bad">ERROR 1064 (42000): ... near 'DISTINCT FROM customers' at line 1</td></tr>
+<tr><td><code>WHERE refunded_at IS NUL</code></td><td class="bad">ERROR 1064 (42000): ... near 'NUL' at line 1</td></tr>
+<tr><td><code>WHERE refunded_at = NULL</code></td><td>No error, 0 rows. Use IS NULL.</td></tr>
+<tr><td><code>WHERE merchant_id = 1 OR 5</code></td><td>No error, all 12 rows: 5 on its own counts as yes.</td></tr>
+<tr><td>AND and OR mixed with no brackets</td><td>No error, extra rows (payment 5 above).</td></tr>
+<tr><td><code>amount_paise &gt; 1000</code> meant as ₹1,000</td><td>No error, all 12 payments: 1000 paise is ₹10.</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>Which two ids come first: <code>SELECT id FROM payments ORDER BY amount_paise DESC, id DESC;</code></summary><pre>amount, biggest first: 5 and 12 tie at 1499900
+tie by id DESC:        12, then 5</pre></details>
+<details><summary>Why does <code>WHERE refunded_at = NULL</code> return nothing?</summary><p>Comparing with NULL gives "unknown" for every row, and WHERE keeps only rows where the test is yes. Use <code>IS NULL</code>.</p></details>
+<details><summary>Which refunds does <code>WHERE reason &lt;&gt; 'overcharged'</code> return, and which are lost?</summary><pre>returned: 1 ('damaged item'), 3 ('changed mind')
+lost:     2 and 5, whose reason is NULL (unknown, not "different")</pre></details>
+<details><summary>Write the 2 smallest approved payments, smallest first, showing id and amount_paise.</summary><pre>SELECT id, amount_paise FROM payments
+WHERE status = 'APPROVED'
+ORDER BY amount_paise
+LIMIT 2;
+
+→ 1 (12000), 6 (32025)     payment 9 (9000) is DECLINED</pre></details>
+<details><summary>What does <code>SELECT DISTINCT network FROM cards</code> return?</summary><p>3 rows: VISA, MASTERCARD, AMEX (from 7 cards).</p></details>`,
+  },
+  {
+    id: 'concept-sql-tables',
+    kind: 'concept', lesson: 'sql1m3', order: 103,
+    date: '2026-10-19',
+    title: 'Your own tables: types, keys, INSERT, UPDATE, DELETE',
+    from: 'Goes with SQL lesson 3: Your own tables',
+    html: `
+<h3>The idea</h3>
+<p>A table is made with CREATE TABLE: a name, then each column with a <b>type</b> (what values it accepts) and its <b>rules</b> (keys, NOT NULL). Then INSERT adds rows, UPDATE changes them, DELETE removes them. In the lab you do this in your own database, <code>sandbox</code>.</p>
+
+<h3>The syntax</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Write</th><th>Meaning</th></tr>
+<tr><td><code>CREATE TABLE shops ( id INT PRIMARY KEY, name VARCHAR(40) NOT NULL UNIQUE, opened_on DATE NOT NULL );</code></td><td>A new empty table. Commas between columns, none after the last.</td></tr>
+<tr><td><code>DESCRIBE shops;</code></td><td>Its columns, types, Null, Key</td></tr>
+<tr><td><code>INSERT INTO shops (id, name, opened_on) VALUES (1, 'Kettle and Cup', '2025-06-01'), (2, ...);</code></td><td>Add rows: one bracket per row, values in column order</td></tr>
+<tr><td><code>UPDATE shops SET name = 'Kettle &amp; Cup' WHERE id = 1;</code></td><td>Change cells in the rows WHERE picks</td></tr>
+<tr><td><code>DELETE FROM shops WHERE id = 4;</code></td><td>Remove the rows WHERE picks</td></tr>
+<tr><td><code>DROP TABLE shops;</code></td><td>Remove the whole table. No undo.</td></tr>
+</table></div>
+
+<h3>Types</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Type</th><th>Holds</th><th>Refuses</th></tr>
+<tr><td><code>INT</code></td><td>Whole numbers up to 2,147,483,647 (about ₹2.1 crore in paise)</td><td class="bad">ERROR 1264 (22003): Out of range value for column 'as_int' at row 1</td></tr>
+<tr><td><code>BIGINT</code></td><td>Whole numbers up to 9,223,372,036,854,775,807. Money in paise.</td><td></td></tr>
+<tr><td><code>VARCHAR(40)</code></td><td>Text up to 40 characters</td><td class="bad">ERROR 1406 (22001): Data too long for column 'name' at row 1</td></tr>
+<tr><td><code>DATE</code></td><td><code>'YYYY-MM-DD'</code></td><td class="bad">ERROR 1292 (22007): Incorrect date value: '2026-02-30' for column 'opened_on' at row 1</td></tr>
+<tr><td><code>DATETIME</code></td><td><code>'YYYY-MM-DD hh:mm:ss'</code></td><td></td></tr>
+<tr><td><code>DECIMAL(10,2)</code></td><td>Exact decimals: 10 digits, 2 after the point (up to 99999999.99)</td><td>Extra digits are rounded: 12.345 → 12.35</td></tr>
+<tr><td><code>FLOAT</code>, <code>DOUBLE</code></td><td>A nearby binary number</td><td>Never for money</td></tr>
+</table></div>
+<pre>₹2.1 crore check:
+2,147,483,647 paise ÷ 100 = ₹2,14,74,836.47
+
+₹50 crore in paise:
+50,00,00,000 rupees × 100 = 5,000,000,000 paise   → more than INT, so BIGINT</pre>
+
+<h3>Why money is never FLOAT</h3>
+<pre>put 0.1 in a FLOAT and in a DECIMAL(10,2), then:
+
+               FLOAT                  DECIMAL
+shows          0.1                    0.10
++ 0.2          0.30000000149011613    0.30
+= 0.1 ?        no (0 rows)            yes</pre>
+<p>MySQL itself treats <code>0.1</code> typed in a query as an exact decimal (<code>SELECT 0.1 + 0.2</code> gives 0.3). Written <code>0.1e0</code> it is floating point: <code>0.1e0 + 0.2e0</code> gives 0.30000000000000004, the same as Java's double.</p>
+
+<h3>Rules on columns</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Rule</th><th>Means</th><th>Broken</th></tr>
+<tr><td><code>PRIMARY KEY</code></td><td>Different in every row, never empty. One per table.</td><td class="bad">ERROR 1062 (23000): Duplicate entry '1' for key 'shops.PRIMARY'</td></tr>
+<tr><td><code>UNIQUE</code></td><td>Different in every row. A table can have many.</td><td class="bad">ERROR 1062 (23000): Duplicate entry 'Kettle and Cup' for key 'shops.name'</td></tr>
+<tr><td><code>NOT NULL</code></td><td>Never empty</td><td class="bad">ERROR 1048 (23000): Column 'name' cannot be null</td></tr>
+<tr><td>NOT NULL, left out of INSERT</td><td></td><td class="bad">ERROR 1364 (HY000): Field 'opened_on' doesn't have a default value</td></tr>
+</table></div>
+<p>A statement either fully happens or not at all: an INSERT of two rows where the second repeats an id adds neither.</p>
+
+<h3>UPDATE and DELETE need WHERE</h3>
+<pre>UPDATE shops SET opened_on = '2026-01-01' WHERE id = 1;   1 row changed
+UPDATE shops SET opened_on = '2026-01-01';                every row changed
+DELETE FROM shops WHERE id = 4;                           1 row deleted
+DELETE FROM shops;                                        every row deleted, table stays
+DROP TABLE shops;                                         table gone</pre>
+<p>Habit: run <code>SELECT * FROM shops WHERE id = 1;</code> first, then turn SELECT * into UPDATE or DELETE. Workbench's "safe updates" refuses an UPDATE without a key in WHERE: <code class="bad">ERROR 1175 (HY000): You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column.</code> <span class="later">Undoing a mistake with a transaction (ROLLBACK): coming in a later SQL lesson</span></p>
+
+<h3>Common mistakes</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>Mistake</th><th>What MySQL says</th></tr>
+<tr><td><code>CREATE TABLE shops (id INT);</code> when shops exists</td><td class="bad">ERROR 1050 (42S01): Table 'shops' already exists</td></tr>
+<tr><td>A comma after the last column</td><td class="bad">ERROR 1064 (42000): ... near ')' at line 4</td></tr><tr><td></td><td>(the line number is where the closing bracket is; in a one-line statement it says line 1)</td></tr>
+<tr><td>3 columns named, 2 values given</td><td class="bad">ERROR 1136 (21S01): Column count doesn't match value count at row 1</td></tr>
+<tr><td><code>'three'</code> into an INT</td><td class="bad">ERROR 1366 (HY000): Incorrect integer value: 'three' for column 'id' at row 1</td></tr>
+<tr><td><code>'30-01-2026'</code> into a DATE</td><td class="bad">ERROR 1292 (22007): Incorrect date value: '30-01-2026' for column 'opened_on' at row 1</td></tr>
+<tr><td><code>SELECT * FROM shops;</code> after DROP TABLE</td><td class="bad">ERROR 1146 (42S02): Table 'sandbox.shops' doesn't exist</td></tr>
+<tr><td>UPDATE or DELETE with no WHERE</td><td>No error: every row changed or gone</td></tr>
+</table></div>
+
+<h3>Check yourself</h3>
+<details><summary>Why is payments.amount_paise BIGINT and not INT?</summary><p>INT stops at 2,147,483,647 paise, about ₹2.1 crore. Totals and big balances go past that, and INT would refuse them with error 1264.</p></details>
+<details><summary>A shop table has no primary key. What goes wrong?</summary><p>Two rows can share an id (the same INSERT run twice gave ids 1, 2, 1, 2), so "shop 1" no longer means one row.</p></details>
+<details><summary>shops has 4 rows. How many does <code>UPDATE shops SET opened_on = '2026-01-01';</code> change?</summary><p>All 4: without WHERE every row is chosen.</p></details>
+<details><summary>Write a table cards_lite: id whole number primary key, network text up to 20 never empty, expires a date never empty.</summary><pre>CREATE TABLE cards_lite (
+  id       INT PRIMARY KEY,
+  network  VARCHAR(20) NOT NULL,
+  expires  DATE NOT NULL
+);</pre></details>
+<details><summary>DELETE, TRUNCATE, DROP: what does each remove?</summary><p>DELETE removes the rows WHERE picks (all of them without WHERE). TRUNCATE removes all rows, faster, and cannot have a WHERE. DROP removes the table itself.</p></details>`,
+  },
 );

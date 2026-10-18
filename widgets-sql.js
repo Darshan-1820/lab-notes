@@ -2,7 +2,9 @@
 // or note can use them like any other: <div data-widget="sqltable" data-key="..."></div>.
 //
 //   sqltable     the practice tables drawn as tables: tap a row, a column or a cell to see what it is;
-//                the primary key, and what MySQL says to a second row with the same id (data-table)
+//                the primary key, and what MySQL says to a second row with the same id (data-table).
+//                data-tables="customers,payments,refunds" picks the tabs; the default is the four
+//                tables of SQL lesson 1 (refunds arrived in lesson 2)
 //   dbmap        who talks to whom: browser, lab app, Workbench, the port, the MySQL server, the
 //                database, the tables; tap a box; type a port and "connect" (data-key)
 //   wherefilter  build a WHERE test (column, sign, value) and watch every row get a yes or a no,
@@ -90,7 +92,22 @@
       ],
       one: 'payment',
     },
+    refunds: {
+      columns: ['id', 'payment_id', 'amount_paise', 'reason', 'refunded_at'], numeric: ['id', 'payment_id', 'amount_paise'],
+      about: { id: 'the refund\'s number, different for every refund', payment_id: 'which payment is being given back: an id from the payments table', amount_paise: 'how much goes back, in whole paise (100 paise = ₹1)', reason: 'why the customer asked; NULL when they gave no reason', refunded_at: 'when the money went back; NULL while the refund is still waiting' },
+      rows: [
+        [1, 2, 45000, 'damaged item', '2026-10-03 12:00:00'],
+        [2, 4, 20000, null, '2026-10-05 10:00:00'],
+        [3, 8, 349900, 'changed mind', null],
+        [4, 10, 50050, 'overcharged', null],
+        [5, 11, 99999, null, '2026-10-10 09:30:00'],
+      ],
+      one: 'refund',
+    },
   };
+  const LESSON1_TABLES = ['customers', 'cards', 'merchants', 'payments'];
+  // A cell's value as HTML: NULL is shown greyed, so it never looks like the text 'NULL'.
+  const cellHtml = v => v === null ? '<span class="sq-null">NULL</span>' : esc(v);
   // Lets a test or a later lesson read the same rows.
   Lab.sqlData = DATA;
 
@@ -114,6 +131,7 @@
   .sq-info pre { margin: 6px 0; }
   .sq-err { color: var(--bad); font-family: var(--mono, Consolas, monospace); white-space: pre-wrap; overflow-wrap: anywhere; }
   .sq-ok { color: var(--accent); font-weight: 600; }
+  .sq-null { color: var(--dim); font-style: italic; }
   .sq-map { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .sq-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
   .sq-box { text-align: left; width: 100%; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--line); background: var(--panel); line-height: 1.3; }
@@ -146,7 +164,8 @@
     function draw() {
       const T = DATA[st.table];
       tabs.innerHTML = '';
-      Object.keys(DATA).forEach(name => {
+      const names = node.dataset.tables ? node.dataset.tables.split(',').map(x => x.trim()).filter(x => DATA[x]) : LESSON1_TABLES;
+      names.forEach(name => {
         const b = btn(name, name === st.table ? 'on' : '', () => { st.table = name; st.row = -1; st.col = -1; st.msg = ''; draw(); });
         b.setAttribute('aria-pressed', name === st.table ? 'true' : 'false');
         tabs.append(b);
@@ -166,7 +185,7 @@
         num.addEventListener('click', () => { st.row = i; st.col = -1; st.msg = ''; draw(); });
         tr.append(num);
         r.forEach((v, j) => {
-          const td = el('td', (j === st.col && st.row < 0 ? 'col-on' : '') + (i === st.row && j === st.col ? ' cell-on' : ''), esc(v));
+          const td = el('td', (j === st.col && st.row < 0 ? 'col-on' : '') + (i === st.row && j === st.col ? ' cell-on' : ''), cellHtml(v));
           td.addEventListener('click', () => { st.row = i; st.col = j; st.msg = ''; draw(); });
           tr.append(td);
         });
@@ -182,9 +201,11 @@
         if (c === 'customer_id') { const who = DATA.customers.rows.find(x => x[0] === v); extra = '<br>Customer ' + v + ' in the customers table is <b>' + esc(who[1]) + '</b>.'; }
         if (c === 'card_id') { const card = DATA.cards.rows.find(x => x[0] === v); extra = '<br>Card ' + v + ' in the cards table is a ' + esc(card[2]) + ' card of customer ' + card[1] + '.'; }
         if (c === 'merchant_id') { const shop = DATA.merchants.rows.find(x => x[0] === v); extra = '<br>Merchant ' + v + ' is <b>' + esc(shop[1]) + '</b>.'; }
-        info.innerHTML = '<b>One cell:</b> row ' + (st.row + 1) + ', column <code>' + esc(c) + '</code> holds <code>' + esc(v) + '</code>.' + extra;
+        if (c === 'payment_id') { const pay = DATA.payments.rows.find(x => x[0] === v); extra = '<br>Payment ' + v + ' in the payments table was ' + pay[3] + ' paise = ' + rupees(pay[3]) + '.'; }
+        if (v === null) info.innerHTML = '<b>One cell:</b> row ' + (st.row + 1) + ', column <code>' + esc(c) + '</code> holds <b>NULL</b>: no value at all. Not 0, not empty text: nothing is known here. For this column that means: ' + esc(T.about[c]) + '.';
+        else info.innerHTML = '<b>One cell:</b> row ' + (st.row + 1) + ', column <code>' + esc(c) + '</code> holds <code>' + esc(v) + '</code>.' + extra;
       } else if (st.row >= 0) {
-        info.innerHTML = '<b>One row</b> = one ' + T.one + ', with every fact about it: <code>' + T.rows[st.row].map(esc).join(' | ') + '</code>.' + (st.table === 'customers' ? ' Its id is ' + T.rows[st.row][0] + ', so "customer ' + T.rows[st.row][0] + '" means exactly this row.' : '');
+        info.innerHTML = '<b>One row</b> = one ' + T.one + ', with every fact about it: <code>' + T.rows[st.row].map(v => v === null ? 'NULL' : esc(v)).join(' | ') + '</code>.' + (st.table === 'customers' ? ' Its id is ' + T.rows[st.row][0] + ', so "customer ' + T.rows[st.row][0] + '" means exactly this row.' : '');
       } else if (st.col >= 0) {
         const c = T.columns[st.col];
         info.innerHTML = '<b>One column</b> = one fact, for every ' + T.one + ': <code>' + esc(c) + '</code> is ' + esc(T.about[c]) + '.' + (st.col === 0 ? '<br>It is the <b>primary key</b>: no two rows may have the same value here, so an id points at exactly one row.' : '');
