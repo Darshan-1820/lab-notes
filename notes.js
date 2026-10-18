@@ -1246,6 +1246,60 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'bill-who-returns-what',
+    date: '2026-10-18',
+    title: 'Bill.java: what the method gives back, and what main does with it',
+    from: 'Week 2, lesson 2: Tax to the nearest paisa',
+    asked: 'It was really confusing. I thought total should be what the function was returning. But that was gst. So user input paise, and basispoints. We had to use that to get gst. Then total would be paise + gst.',
+    widgets: {
+      'q-bill-flow': {
+        code: ['long price = keys.nextLong();', 'int rate = keys.nextInt();', 'long gst = percentOf(price, rate);', 'long total = price + gst;', 'System.out.println("Price: " + price);', 'System.out.println("GST: " + gst);', 'System.out.println("Total: " + total);'],
+        steps: [
+          { line: 0, vars: { price: 1003 }, out: [], note: 'Typed in: the price in paise.' },
+          { line: 1, vars: { price: 1003, rate: 1800 }, out: [], note: 'Typed in: the GST rate in basis points (18%).' },
+          { line: 2, vars: { price: 1003, rate: 1800, gst: 181 }, out: [], note: 'main hands price and rate to percentOf. Inside: (1003 × 1800 + 5000) ÷ 10000 = 181. The call is replaced by its answer, 181, which lands in gst. The method only knows how to take a percentage. It knows nothing about bills or totals.' },
+          { line: 3, vars: { price: 1003, rate: 1800, gst: 181, total: 1184 }, out: [], note: 'main does the adding: 1003 + 181 = 1184. The total is main\'s job, not the method\'s.' },
+          { line: 4, vars: { price: 1003, rate: 1800, gst: 181, total: 1184 }, out: ['Price: 1003'], note: '' },
+          { line: 5, vars: { price: 1003, rate: 1800, gst: 181, total: 1184 }, out: ['Price: 1003', 'GST: 181'], note: '' },
+          { line: 6, vars: { price: 1003, rate: 1800, gst: 181, total: 1184 }, out: ['Price: 1003', 'GST: 181', 'Total: 1184'], note: 'Three lines, three boxes: two typed in, one from the method, one added up in main.' },
+        ],
+      },
+    },
+    html: `
+<h3>You worked it out exactly right</h3>
+<p>The price and the rate are typed in. <code>percentOf</code> turns them into the <b>GST</b>. Then <code>main</code> adds: <b>total = price + GST</b>. Your Bill.java does exactly this, and it passed with no hints.</p>
+<p>The confusion was fair. The task listed three lines to print and one method to write, but it never said which line the method makes. That was a gap in how the task was written, not in you.</p>
+
+<h3>The flow, as a picture</h3>
+<pre>typed:  price = 1003      rate = 1800
+              \             /
+               percentOf(price, rate)      ← only takes a percentage
+                      |
+                 gst = 181
+                      |
+ main:   total = price + gst = 1184       ← main does the adding
+                      |
+ print:  Price: 1003 / GST: 181 / Total: 1184</pre>
+<div data-widget="stepper" data-ref="q-bill-flow"></div>
+
+<h3>A habit for any task with a method</h3>
+<p>Before writing any code, answer three questions on paper:</p>
+<ol>
+<li><b>What goes in?</b> Look at the brackets: <code>percentOf(long paise, int basisPoints)</code> takes a price and a rate.</li>
+<li><b>What comes out?</b> Look at the type before the name (<code>long</code>) and at the name: "percent of" gives back a percentage of something, which is the GST, not a total.</li>
+<li><b>Who does the rest?</b> Anything the method doesn't give back (here the total, and the printing) is <code>main</code>'s job.</li>
+</ol>
+<p>A method with a narrow job ("take a percentage") can be used again anywhere: for GST, a discount, a tip or interest. A method that also added the total would only work for bills.</p>
+
+<h3>One small thing in your code</h3>
+<p><code>long price = paise;</code> makes a second box holding the same number. It works, but you only need one: read straight into <code>long price = sc.nextLong();</code> and use <code>price</code> everywhere.</p>
+
+<h3>Check yourself</h3>
+<details><summary>A shop gives a 10% discount (1000 basis points) on 5000 paise. Using percentOf, what does main do?</summary><p><code>long off = percentOf(5000, 1000);</code> gives 500. Then <code>long pay = 5000 - off;</code> gives 4500. The method makes the percentage; main subtracts.</p></details>
+<details><summary>From the signature alone, what does <code>static long monthlyInterest(long balance, int basisPointsPerYear)</code> take in and give back?</summary><p>It takes a balance and a yearly rate, and gives back one month's interest as a long. Adding that to the balance is the caller's job.</p></details>`,
+  },
+
+  {
     id: 'long-times-int',
     date: '2026-10-18',
     title: 'What happens when you multiply a long and an int?',
