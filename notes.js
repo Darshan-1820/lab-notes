@@ -1246,6 +1246,40 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'array-start-address',
+    date: '2026-10-18',
+    title: 'What is the 1000 in "start + index × 8"?',
+    from: 'Week 2, lesson 4: the array picture',
+    asked: 'Address = start + index × 8 = 1000 + 3 × 8 = 1024. That cell holds 4100. What is the 1000 here?',
+    html: `
+<h3>The idea</h3>
+<p>Memory is one long row of numbered byte slots. The number of a slot is its <b>address</b>.<br>
+The 1000 is the address where the array's first box (index 0) begins.<br>
+Java picks the real number when the array is made; 1000 is made up so the sums are easy.</p>
+
+<h3>Why × 8</h3>
+<p>A <code>long</code> takes 8 bytes, so each box is 8 slots wide.</p>
+<pre>box [0]  starts at 1000 + 0 × 8 = 1000
+box [1]  starts at 1000 + 1 × 8 = 1008
+box [2]  starts at 1000 + 2 × 8 = 1016
+box [3]  starts at 1000 + 3 × 8 = 1024   ← holds 4100</pre>
+
+<h3>Try it</h3>
+<div data-widget="arraymem" data-key="note-array-start"></div>
+
+<h3>Check yourself</h3>
+<details><summary>If the array started at 2000, where does box [5] start?</summary>
+<pre>2000 + 5 × 8
+= 2000 + 40
+= 2040</pre></details>
+<details><summary>An <code>int</code> takes 4 bytes. An int array starts at 1000. Where does box [3] start?</summary>
+<pre>1000 + 3 × 4
+= 1000 + 12
+= 1012</pre></details>
+<p class="muted">Where Java really puts the array (the heap) is <span class="later">Coming in weeks 4 to 5</span>.</p>`,
+  },
+
+  {
     id: 'rule-of-72',
     date: '2026-10-18',
     title: 'The rule of 72, broken down',

@@ -258,7 +258,8 @@
       } else {
         const right = clean(answered[key]).join('\n') === clean(b.answer).join('\n');
         card.append(el('div', 'muted', 'You said'), el('pre', '', esc(answered[key])), el('div', 'muted', b.ask ? 'The answer' : 'It prints'), el('pre', '', esc(b.answer)));
-        card.append(el('div', right ? 'good' : 'muted', right ? 'Correct.' : 'Not this time. The walk-through below shows where it went differently.'));
+        card.append(el('div', right ? 'good' : 'muted', right ? 'Correct.' : 'Not this time. Compare your answer with the one above, one line at a time. If you cannot see the difference, paste both to the tutor.'));
+        if (!right && b.why) card.append(el('div', 'muted', 'Why'), el('div', '', b.why));
       }
     }
     draw();
