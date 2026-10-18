@@ -20,7 +20,12 @@
   function exact(r, want) {
     const got = r.lines.map(l => l.trim());
     for (let n = 0; n < want.length; n++) {
-      if (got[n] !== want[n]) return 'Line ' + (n + 1) + ' should be "' + want[n] + '"' + (got[n] === undefined ? ', but the output ended.' : ', but it is "' + got[n] + '".');
+      if (got[n] === undefined) return 'Line ' + (n + 1) + ' should be "' + want[n] + '", but the output ended.';
+      if (got[n] !== want[n] && got[n].replace(/\s+/g, ' ') === want[n].replace(/\s+/g, ' ')) {
+        const dots = t => '"' + t.replace(/ /g, '·') + '"';   // a page squeezes double spaces, so show each one as ·
+        return 'Line ' + (n + 1) + ': only the spaces differ (each · is one space). It should be ' + dots(want[n]) + ', but it is ' + dots(got[n]) + '.';
+      }
+      if (got[n] !== want[n]) return 'Line ' + (n + 1) + ' should be "' + want[n] + '", but it is "' + got[n] + '".';
     }
     if (got.length > want.length) return 'There is an extra line after the last one: "' + got[want.length] + '".';
     return '';
