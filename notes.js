@@ -1246,6 +1246,55 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'month-interest-from-zero',
+    date: '2026-10-18',
+    title: 'One month of interest, from zero: why ÷ 10000, ÷ 12 and ÷ 120000',
+    from: 'Week 2, lesson 3: Money that grows',
+    asked: 'Why are we dividing it by 120000 or 10000? Rate is 6% so, 600 basisPoints. 12% is 1200. If I had to calculate the interest for a month when money is 2000 then 200000 (in paise) * 600 (basisPoints) / ... I do not understand anything.',
+    html: `
+<h3>The example: ₹2,000 at 6% a year. How much interest in one month?</h3>
+
+<h3>Step 1: plain rupees, the way you'd do it on paper</h3>
+<pre>6% of ₹2,000 for a year = 2000 × 6 ÷ 100 = ₹120 a year
+one month               = 120 ÷ 12       = ₹10 a month</pre>
+<p>That is the whole idea. Everything after this only changes the units.</p>
+
+<h3>Step 2: the units the program uses</h3>
+<pre>money:  ₹2,000 = 200000 paise         (× 100, so there's no point)
+rate:   6%     = 600 basis points     (× 100, so 6.5% can be 650)</pre>
+
+<h3>Step 3: step 1 again, with those numbers</h3>
+<pre>200000 × 600 = 120,000,000
+÷ 10000      = 12,000 paise a year    (₹120, same as step 1)
+÷ 12         = 1,000 paise a month    (₹10, same as step 1)</pre>
+<ul>
+<li><b>÷ 10000</b>: 600 basis points means "600 out of 10,000", just as 6% means "6 out of 100".</li>
+<li><b>÷ 12</b>: a year has 12 months.</li>
+</ul>
+
+<h3>Step 4: 120000 is only a shortcut</h3>
+<pre>÷ 10000, then ÷ 12   is the same as   ÷ (10000 × 12) = ÷ 120000
+
+120,000,000 ÷ 120000 = 1,000 paise   (same answer)</pre>
+<p>The method divides once so that it rounds once.</p>
+
+<h3>Step 5: the + 60000</h3>
+<pre>half of 120000 = 60000
+(120,000,000 + 60000) ÷ 120000 = 1000   (rounded to the nearest paisa)</pre>
+<p>It is lesson 2's rule: add half of what you divide by.</p>
+
+<h3>The same steps for the lesson's numbers (₹1,000 at 12%)</h3>
+<pre>plain:   1000 × 12 ÷ 100 = ₹120 a year,  ÷ 12 = ₹10 a month
+program: 100000 × 1200   = 120,000,000
+         ÷ 10000         = 12,000 paise a year
+         ÷ 12            = 1,000 paise a month   (₹10)</pre>
+
+<h3>Check yourself</h3>
+<details><summary>₹5,000 at 12% a year. One month's interest in rupees?</summary><p>5000 × 12 ÷ 100 = ₹600 a year. 600 ÷ 12 = ₹50 a month.</p></details>
+<details><summary>The same in paise and basis points?</summary><p>500000 × 1200 = 600,000,000. ÷ 10000 = 60,000 paise a year. ÷ 12 = 5,000 paise a month = ₹50.</p></details>`,
+  },
+
+  {
     id: 'rounding-from-zero',
     date: '2026-10-18',
     title: 'Rounding from zero: what "half rounds up" means, with examples',
