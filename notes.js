@@ -1246,6 +1246,62 @@ int move = keys.nextInt();</pre>
 
   // ======================= questions he asked =======================
   {
+    id: 'rule-of-72',
+    date: '2026-10-18',
+    title: 'The rule of 72, broken down',
+    from: 'Week 2, lesson 3: Money that grows (the optional experiment)',
+    asked: 'Money roughly doubles in 72/rate years. What does it even mean? How does it make sense? How did doubled become 200000 paise? Why in paise?',
+    html: `
+<h3>1. What "doubles" means</h3>
+<pre>double = 2 times as much
+₹1,000 doubled = ₹2,000</pre>
+
+<h3>2. The rule</h3>
+<p>It is a shortcut for guessing how many years your money takes to double with compound interest:</p>
+<pre>years to double ≈ 72 ÷ interest rate (in %)</pre>
+<p>"≈" means "roughly". It is a quick guess, not an exact answer.</p>
+
+<h3>3. Try it: 12% a year</h3>
+<pre>72 ÷ 12 = 6   → the guess: about 6 years to double</pre>
+<p>Check it the long way. Each year the money grows by 12% of whatever it is now:</p>
+<pre>start:   ₹1,000.00
+year 1:  ₹1,000.00 + 12% = ₹1,120.00
+year 2:  ₹1,120.00 + 12% = ₹1,254.40
+year 3:  ₹1,254.40 + 12% = ₹1,404.93
+year 4:  ₹1,404.93 + 12% = ₹1,573.52
+year 5:  ₹1,573.52 + 12% = ₹1,762.34
+year 6:  ₹1,762.34 + 12% = ₹1,973.82   ← almost ₹2,000: doubled</pre>
+<p>The guess (6 years) was right.</p>
+
+<h3>4. Try it: 8% a year</h3>
+<pre>72 ÷ 8 = 9   → the guess: about 9 years
+
+year 9:  ₹1,999.00   ← doubled, as guessed</pre>
+
+<h3>5. And 6% a year</h3>
+<pre>72 ÷ 6 = 12  → the guess: about 12 years
+
+year 12: ₹2,012.20   ← doubled, as guessed</pre>
+
+<h3>6. Why does a shortcut like this work?</h3>
+<p>Look at the 12% table. Each year adds a bit more than the year before (₹120, then ₹134.40, then ₹150.53...), because the 12% is taken of a bigger amount each time. It takes a certain number of these growing steps to reach 2 times. Mathematicians worked out that "rate × years ≈ 72" is where that happens for normal interest rates (about 4% to 15%). The exact reason needs logarithms, which come much later in the maths track. For now it's enough to know that it's a guess that works, and that you've checked it three times above.</p>
+
+<h3>7. Why the lesson said "200000 paise"</h3>
+<p>Growth.java counts all money in paise, so its answer comes out in paise:</p>
+<pre>₹2,000 = 2000 × 100 = 200000 paise</pre>
+<p>The lesson switched to paise mid-sentence without saying so. That was bad writing, not you.</p>
+
+<h3>8. What the lesson's experiment shows</h3>
+<p>The lesson adds interest every month (1% a month) for 72 months = 6 years. Growth.java then prints:</p>
+<pre>204711 paise = ₹2,047.11</pre>
+<p>That's close to ₹2,000, so the rule's guess holds. It's a bit more than ₹1,973.82 because adding interest monthly compounds faster than adding it yearly.</p>
+
+<h3>Check yourself</h3>
+<details><summary>At 9% a year, roughly how many years to double?</summary><p>72 ÷ 9 = 8 years.</p></details>
+<details><summary>You want your money to double in 4 years. Roughly what rate do you need?</summary><p>72 ÷ 4 = 18%.</p></details>`,
+  },
+
+  {
     id: 'growth-which-balance',
     date: '2026-10-18',
     title: 'Growth.java: is the monthly balance simple or compound?',
