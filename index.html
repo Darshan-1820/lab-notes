@@ -85,15 +85,18 @@
 <script src="sql1.js"></script>
 <script src="sql2.js"></script>
 <script src="sql3.js"></script>
+<script src="job.js"></script>
 <script src="rematches.js"></script>
 <script src="notes.js"></script>
 <script src="notes-week2.js"></script>
 <script src="notes-sql.js"></script>
+<script src="notes-job.js"></script>
 <script src="plan.js"></script>
 <script src="math-data.js"></script>
 <script src="widgets.js"></script>
 <script src="widgets-week2.js"></script>
 <script src="widgets-sql.js"></script>
+<script src="widgets-job.js"></script>
 <script src="math.js"></script>
 <script>
 (function () {
@@ -290,6 +293,14 @@
         c.append(el('div', 'tag', (b.t === 'sqltask' ? 'Build: your query' : b.experiment ? 'Experiment' : 'Run a query') + ' · on your computer'));
         if (b.html) c.append(el('div', '', b.html));
         if (b.sql || b.start) c.append(el('pre', '', esc(b.sql || b.start)));
+        body.append(c);
+      }
+      else if (b.t === 'sqlsession' || b.t === 'sqlsessiontask') {
+        // Two windows run only in the lab on the computer: show the text and the steps.
+        const c = el('div', b.t === 'sqlsessiontask' ? 'card task' : 'card try');
+        c.append(el('div', 'tag', (b.t === 'sqlsessiontask' ? 'Build: your steps' : b.experiment ? 'Experiment: two windows' : 'Two windows') + ' · on your computer'));
+        if (b.html) c.append(el('div', '', b.html));
+        if (b.steps && b.steps.length) c.append(el('pre', '', esc(b.steps.join('\n'))));
         body.append(c);
       }
       else if (b.t === 'task') {
