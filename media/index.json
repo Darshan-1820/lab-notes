@@ -1,15 +1,1 @@
-[
-  {
-    "id": "t01-clock-skew",
-    "title": "A licence from the future: clock skew and the iat check",
-    "topic": "Security · tokens · time",
-    "lesson": "Your question, 20 Oct",
-    "public": true,
-    "audio": "media/t01-clock-skew.mp3",
-    "captions": "media/t01-clock-skew.vtt",
-    "audioSeconds": 297,
-    "updated": "2026-10-20",
-    "video": "media/t01-clock-skew.mp4",
-    "videoSeconds": 297
-  }
-]
+[]
