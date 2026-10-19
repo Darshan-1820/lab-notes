@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Listen and Watch</title>
+<style>
+/* Listen & watch (DECISIONS 60): Grace's narrated recaps and videos. Reads media/index.json, written by
+   app/media/audio.js and video.js. Works in the lab (laptop) and on the phone site (public episodes only). */
+:root{--bg:#f4f1ea;--card:#fbfaf6;--ink:#1f1d1a;--dim:#6f6a60;--line:#e2ddd1;--accent:#c96442;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#171614;--card:#1f1e1b;--ink:#ede9e0;--dim:#a19b8f;--line:#312f2b;--accent:#e0805f;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:17px}
+header a{margin-left:auto;color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px}
+main{max-width:860px;margin:0 auto;padding:16px}
+.intro{color:var(--dim);margin:0 0 16px}
+.topic{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:20px 0 8px}
+.ep{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.ep h2{margin:0 0 4px;font-size:16px}
+.meta{font-size:12.5px;color:var(--dim);margin-bottom:10px}
+audio,video{width:100%;display:block;border-radius:8px}
+video{background:#000;margin-top:10px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+button{font:inherit;font-size:13px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 10px;cursor:pointer}
+button.on{border-color:var(--accent);color:var(--accent)}
+.empty{color:var(--dim)}
+</style>
+</head>
+<body>
+<header><h1>Listen &amp; watch</h1><a href="./">← Back</a></header>
+<main>
+  <p class="intro">Short narrated recaps from Grace. Listen while you do something else, or watch the slides with captions. Your place in each one is remembered on this device.</p>
+  <div id="list" class="empty">Loading…</div>
+</main>
+<script>
+"use strict";
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const mins = s => s ? Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0") : "";
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+function wire(el, id) {
+  const key = "media-pos-" + id + "-" + el.tagName;
+  const at = parseFloat(store.get(key) || "0");
+  el.addEventListener("loadedmetadata", () => { if (at > 5 && at < el.duration - 5) el.currentTime = at; }, { once: true });
+  el.addEventListener("timeupdate", () => { if (Math.round(el.currentTime) % 5 === 0) store.set(key, String(el.currentTime)); });
+  el.playbackRate = parseFloat(store.get("media-rate") || "1");
+}
+
+async function load() {
+  let items = [];
+  try { items = await (await fetch("media/index.json", { cache: "no-store" })).json(); } catch {}
+  const list = document.getElementById("list");
+  if (!items.length) { list.textContent = "Nothing yet."; return; }
+  const byTopic = {};
+  items.forEach(x => (byTopic[x.topic || "Other"] = byTopic[x.topic || "Other"] || []).push(x));
+  list.className = "";
+  list.innerHTML = Object.entries(byTopic).map(([t, eps]) => '<div class="topic">' + esc(t) + '</div>' + eps.map(x =>
+    '<div class="ep" data-id="' + esc(x.id) + '"><h2>' + esc(x.title) + '</h2><div class="meta">'
+    + [x.audio ? "Audio " + mins(x.audioSeconds) : "", x.video ? "Video " + mins(x.videoSeconds) : "", x.lesson, "updated " + x.updated].filter(Boolean).map(esc).join(" · ") + '</div>'
+    + (x.audio ? '<audio controls preload="none" src="' + esc(x.audio) + '"></audio>' : "")
+    + '<div class="row">' + [1, 1.25, 1.5].map(r => '<button data-rate="' + r + '">' + r + '×</button>').join("")
+    + (x.video ? '<button data-watch="' + esc(x.id) + '">Watch with slides</button>' : "") + '</div><div class="vid"></div></div>').join("")).join("");
+  list.querySelectorAll(".ep").forEach(card => { const a = card.querySelector("audio"); if (a) wire(a, card.dataset.id); });
+  marks();
+  list.addEventListener("click", ev => {
+    const r = ev.target.closest("[data-rate]");
+    if (r) { store.set("media-rate", r.dataset.rate); document.querySelectorAll("audio,video").forEach(m => m.playbackRate = +r.dataset.rate); marks(); return; }
+    const w = ev.target.closest("[data-watch]");
+    if (w) {
+      const x = items.find(i => i.id === w.dataset.watch), box = w.closest(".ep").querySelector(".vid");
+      if (box.firstChild) { box.innerHTML = ""; return; }
+      box.innerHTML = '<video controls playsinline preload="metadata" src="' + esc(x.video) + '"></video>';
+      const v = box.querySelector("video"); wire(v, x.id);
+      const a = w.closest(".ep").querySelector("audio"); if (a) a.pause();
+      v.play().catch(() => {});
+    }
+  });
+}
+function marks() { const r = store.get("media-rate") || "1"; document.querySelectorAll("[data-rate]").forEach(b => b.classList.toggle("on", b.dataset.rate === r)); }
+load();
+</script>
+</body>
+</html>

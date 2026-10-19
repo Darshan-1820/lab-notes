@@ -205,6 +205,11 @@
       box.innerHTML = '<span class="kicker">Plan · ' + esc(PLAN.week.title) + '</span><b>' + esc(first.by) + '</b><span class="s">' + first.items.map(i => esc(i.text)).join(' · ') + '</span><span class="more">Open the full plan and roadmap</span>';
       app.append(box);
     }
+    // Grace's narrated recaps and videos (DECISIONS 61): only public episodes (made-up data) are copied here.
+    const media = el('a', 'card planlink');
+    media.href = 'listen.html';
+    media.innerHTML = '<span class="kicker">Listen &amp; watch</span><b>Narrated recaps and videos</b><span class="s">Listen in a break, or watch the slides with captions.</span><span class="more">Open</span>';
+    app.append(media);
     app.append(marksCard());
     WEEKS.forEach(w => {
       app.append(el('h2', 'section', esc(w.title)));
