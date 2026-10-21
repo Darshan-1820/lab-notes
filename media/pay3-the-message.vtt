@@ -1,0 +1,541 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:04.992
+This is payments lecture 3. What the request carries, and in what format.
+
+2
+00:00:05.342 --> 00:00:13.321
+In lecture 1 you tapped a card for ₹250. The terminal asked: may I charge 250?
+
+3
+00:00:13.671 --> 00:00:17.670
+Today we open that question and read it, byte by byte.
+
+4
+00:00:18.020 --> 00:00:19.953
+Do I need anything before this?
+
+5
+00:00:20.303 --> 00:00:26.189
+Only bits, bytes and hex, from the bits and bytes note. 8 switches make a byte.
+
+6
+00:00:26.189 --> 00:00:28.945
+Each half of a byte is one hex digit.
+
+7
+00:00:29.295 --> 00:00:31.456
+First, where the message goes.
+
+8
+00:00:31.806 --> 00:00:36.414
+The terminal sends the request to the shop's bank. That is the acquirer.
+
+9
+00:00:36.764 --> 00:00:42.695
+The shop's bank sends it to the card network. Visa, Mastercard, or RuPay.
+
+10
+00:00:43.045 --> 00:00:48.135
+The network looks at the first digits of the card number, and sends it to the
+
+11
+00:00:48.135 --> 00:00:50.250
+card's bank. That is the issuer.
+
+12
+00:00:50.600 --> 00:00:55.656
+The card's bank says yes or no, and the answer travels back the same way.
+
+13
+00:00:56.006 --> 00:01:02.794
+Between the banks and the network, these two messages are written in one format:
+
+14
+00:01:02.794 --> 00:01:03.558
+ISO 8583.
+
+15
+00:01:03.908 --> 00:01:06.445
+Why not just send text, like a modern app?
+
+16
+00:01:06.795 --> 00:01:13.375
+Because it is old. The version most networks build on is from 1987, when every
+
+17
+00:01:13.375 --> 00:01:14.725
+byte cost money.
+
+18
+00:01:15.075 --> 00:01:21.243
+So there are no labels. A modern system writes "amount": 250.00. This format
+
+19
+00:01:21.243 --> 00:01:25.544
+just sends 12 digits, at a place both sides agree on.
+
+20
+00:01:25.894 --> 00:01:30.308
+Short and fast. But you cannot read it without the rule book.
+
+21
+00:01:30.658 --> 00:01:34.316
+Every message has three parts, always in this order.
+
+22
+00:01:34.666 --> 00:01:37.499
+One. The message type. Four digits.
+
+23
+00:01:37.849 --> 00:01:43.081
+Two. The bitmap. 64 switches that say which fields are present.
+
+24
+00:01:43.431 --> 00:01:48.479
+Three. The fields. Only the ones the bitmap switched on, in number order.
+
+25
+00:01:48.829 --> 00:01:53.992
+Part one. The message type of our request is 0100.
+
+26
+00:01:54.342 --> 00:01:56.689
+Read it one digit at a time.
+
+27
+00:01:57.039 --> 00:02:02.256
+The first digit, 0, is the version: the 1987 standard.
+
+28
+00:02:02.606 --> 00:02:07.104
+The second digit, 1, is the class: an authorisation. May I?
+
+29
+00:02:07.454 --> 00:02:12.732
+The third digit, 0, is the function: a question. 1 would mean an answer.
+
+30
+00:02:13.082 --> 00:02:17.263
+The fourth digit, 0, says who started it: the shop's side.
+
+31
+00:02:17.613 --> 00:02:26.447
+Your turn. What is 0110? And 0400, if class 4 means reversal? Pause now.
+
+32
+00:02:28.947 --> 00:02:35.005
+0110. Class 1, function 1. The answer to an authorisation.
+
+33
+00:02:35.355 --> 00:02:42.647
+0400. Class 4, function 0. A reversal question: cancel that one.
+
+34
+00:02:42.997 --> 00:02:44.735
+Part two. The bitmap.
+
+35
+00:02:45.085 --> 00:02:51.237
+There are 128 possible fields, but a payment needs only 10 to 20.
+
+36
+00:02:51.587 --> 00:02:57.999
+So instead of labelling each field, the message starts with 64 switches. Switch
+
+37
+00:02:57.999 --> 00:03:00.191
+2 on means field 2 is here.
+
+38
+00:03:00.541 --> 00:03:07.752
+8 switches are 1 byte. So 64 switches are 8 bytes. In hex, 16 characters.
+
+39
+00:03:08.102 --> 00:03:14.502
+Here is the first row of 8. In our message, switches 2, 3, 4 and 7 are on.
+
+40
+00:03:14.852 --> 00:03:17.821
+This is the part I asked about. How are they numbered?
+
+41
+00:03:18.171 --> 00:03:23.893
+Every switch has two labels. Look at the top: its number. Counted from the left,
+
+42
+00:03:23.893 --> 00:03:27.255
+starting at 1. That number is the field number.
+
+43
+00:03:27.605 --> 00:03:34.503
+Look at the bottom: its worth. 8, 4, 2, 1, and again 8, 4, 2, 1. The worth is
+
+44
+00:03:34.503 --> 00:03:36.922
+only used to write the hex.
+
+45
+00:03:37.272 --> 00:03:46.386
+Write one bit per switch, left to right. Switch 1 off: 0. Switches 2, 3, 4 on: 1
+
+46
+00:03:46.386 --> 00:03:49.804
+1 1. 5 and 6 off. 7 on. 8 off.
+
+47
+00:03:50.154 --> 00:03:54.847
+So the pattern is 0111 0010.
+
+48
+00:03:55.197 --> 00:04:02.947
+Left half: 0×8 + 1×4 + 1×2 + 1×1.
+
+49
+00:04:03.297 --> 00:04:08.963
+= 0 + 4 + 2 + 1 = 7. Hex digit 7.
+
+50
+00:04:09.313 --> 00:04:17.117
+Right half: 0×8 + 0×4 + 1×2 + 0×1 = 2. Hex digit 2.
+
+51
+00:04:17.467 --> 00:04:22.448
+Side by side, the byte is hex 72.
+
+52
+00:04:22.798 --> 00:04:27.875
+In the bits note I counted the worth from the right. One, two, four, eight. That
+
+53
+00:04:27.875 --> 00:04:29.462
+is why it felt backwards.
+
+54
+00:04:29.812 --> 00:04:35.415
+Exactly. Both are true at once. The worth grows from the right. The switch
+
+55
+00:04:35.415 --> 00:04:39.730
+number grows from the left. Switch 1 is the leftmost one.
+
+56
+00:04:40.080 --> 00:04:49.841
+The standard reads it the same way. Hex 82 is 1000 0010. That means fields 1 and
+
+57
+00:04:49.841 --> 00:04:50.085
+7.
+
+58
+00:04:50.435 --> 00:04:57.333
+Your turn. Row 2 holds fields 9 to 16. In our message, fields 11 and 14 are on.
+
+59
+00:04:57.333 --> 00:05:01.350
+Write the pattern and the hex byte. Pause now.
+
+60
+00:05:04.350 --> 00:05:09.506
+Field 11 is the 3rd switch of the row. Field 14 is the 6th.
+
+61
+00:05:09.856 --> 00:05:14.656
+Pattern: 0010 0100.
+
+62
+00:05:15.006 --> 00:05:22.767
+Left half: only the 2 is on: 2. Right half: only the 4 is on: 4. The byte is 24.
+
+63
+00:05:23.117 --> 00:05:27.234
+Do the same for all 8 rows, and you get the whole bitmap.
+
+64
+00:05:27.584 --> 00:05:35.037
+72 24 04 80 08 E0 82 00
+
+65
+00:05:35.387 --> 00:05:42.757
+And notice: switch 1 is off. Switch 1 on would mean a second bitmap follows, for
+
+66
+00:05:42.757 --> 00:05:46.442
+fields 65 to 128. We need none of those.
+
+67
+00:05:46.792 --> 00:05:51.548
+Part three. The fields. Here are the important ones in our request.
+
+68
+00:05:51.898 --> 00:05:58.199
+Field 2, the card number. Field 3, what kind of transaction: all zeros means a
+
+69
+00:05:58.199 --> 00:06:00.622
+purchase. Field 4, the amount.
+
+70
+00:06:00.972 --> 00:06:07.397
+Field 11, the trace number. Field 22, how the card was read: 07 means
+
+71
+00:06:07.397 --> 00:06:08.980
+contactless chip.
+
+72
+00:06:09.330 --> 00:06:16.508
+Field 37, a reference that stays with this payment through refunds and disputes.
+
+73
+00:06:16.508 --> 00:06:21.353
+41, the terminal. 49, the currency. 55, the chip data.
+
+74
+00:06:21.703 --> 00:06:26.383
+If there are no labels and no spaces, how does the reader know where one field
+
+75
+00:06:26.383 --> 00:06:26.683
+ends?
+
+76
+00:06:27.033 --> 00:06:33.681
+Two ways. Most fields are fixed. The rule book says field 4 is always 12 digits.
+
+77
+00:06:33.681 --> 00:06:35.676
+So the reader counts 12.
+
+78
+00:06:36.026 --> 00:06:42.534
+Some fields change length, like the card number. Those start with their length.
+
+79
+00:06:42.534 --> 00:06:47.559
+Field 2 starts with 16, then 16 digits. That is called LLVAR.
+
+80
+00:06:47.909 --> 00:06:54.073
+A longer field, like the chip data, uses three digits of length: LLLVAR.
+
+81
+00:06:54.423 --> 00:06:57.772
+Now the amount. It has no decimal point.
+
+82
+00:06:58.122 --> 00:07:04.693
+Field 4 is 12 digits: 000000025000.
+
+83
+00:07:05.043 --> 00:07:08.584
+Drop the zeros in front: 25000.
+
+84
+00:07:08.934 --> 00:07:16.149
+Field 49 says 356. That is the rupee, which has 2 digits after the point. So the
+
+85
+00:07:16.149 --> 00:07:17.862
+number is in paise.
+
+86
+00:07:18.212 --> 00:07:24.442
+25000 paise ÷ 100 = ₹250.00
+
+87
+00:07:24.792 --> 00:07:29.127
+Whole numbers only. Nothing in this message is ever a double.
+
+88
+00:07:29.477 --> 00:07:39.824
+Your turn. Field 4 is 000000150075. Field 49 is 356. How much is the payment?
+
+89
+00:07:39.824 --> 00:07:41.168
+Pause now.
+
+90
+00:07:44.168 --> 00:07:52.273
+150075 paise. ÷ 100 = 1500, remainder 75.
+
+91
+00:07:52.623 --> 00:07:56.843
+= ₹1,500.75
+
+92
+00:07:57.193 --> 00:08:00.862
+Now the answer: message 0110.
+
+93
+00:08:01.212 --> 00:08:07.339
+The card's bank copies the fields that identify the question. The most important
+
+94
+00:08:07.339 --> 00:08:09.637
+is field 11, the trace number.
+
+95
+00:08:09.987 --> 00:08:12.157
+Why is that the most important one?
+
+96
+00:08:12.507 --> 00:08:17.831
+Because the shop's bank sends thousands of questions, and the answers come back
+
+97
+00:08:17.831 --> 00:08:22.819
+in any order. The trace number says which question each answer belongs to.
+
+98
+00:08:23.169 --> 00:08:29.381
+The card's bank also adds two fields of its own. Field 38, the approval code,
+
+99
+00:08:29.381 --> 00:08:33.980
+printed on your receipt. And field 39, the response code.
+
+100
+00:08:34.330 --> 00:08:36.613
+00 means approved.
+
+101
+00:08:36.963 --> 00:08:43.968
+05: do not honour, a no without a reason. 14: no such card number. 51: not
+
+102
+00:08:43.968 --> 00:08:45.199
+enough money.
+
+103
+00:08:45.549 --> 00:08:53.049
+54: the card has expired. 55: wrong PIN. 91: the card's bank could not be
+
+104
+00:08:53.049 --> 00:08:53.871
+reached.
+
+105
+00:08:54.221 --> 00:08:59.654
+When a terminal says declined, it is one of these two characters, turned into
+
+106
+00:08:59.654 --> 00:09:00.077
+words.
+
+107
+00:09:00.427 --> 00:09:03.115
+You will meet a few other message types.
+
+108
+00:09:03.465 --> 00:09:09.331
+0100 is an authorisation: may I? The money does not move yet.
+
+109
+00:09:09.681 --> 00:09:16.769
+0200 is a financial message: the money is meant to move. ATMs use these.
+
+110
+00:09:17.119 --> 00:09:23.721
+0400 is a reversal: cancel that one. For example, when the answer never arrived
+
+111
+00:09:23.721 --> 00:09:25.810
+and the terminal gave up.
+
+112
+00:09:26.160 --> 00:09:32.065
+0800 is a network check: are you still there? No customer involved.
+
+113
+00:09:32.415 --> 00:09:34.669
+So when does the money actually move?
+
+114
+00:09:35.019 --> 00:09:39.866
+Later, in end-of-day files between the banks. That is lecture 7.
+
+115
+00:09:40.216 --> 00:09:42.733
+Three things are not in the message.
+
+116
+00:09:43.083 --> 00:09:49.986
+The PIN in plain digits. When a PIN is needed, it travels encrypted, in a field
+
+117
+00:09:49.986 --> 00:09:51.908
+of its own. Lecture 6.
+
+118
+00:09:52.258 --> 00:09:58.120
+The CVV on the back of the card. A chip payment does not use it. It is for
+
+119
+00:09:58.120 --> 00:10:00.814
+typing card details into websites.
+
+120
+00:10:01.164 --> 00:10:04.748
+And your name. The bank does not need it to decide.
+
+121
+00:10:05.098 --> 00:10:11.321
+What makes the payment hard to fake is field 55: the chip's one-time code, the
+
+122
+00:10:11.321 --> 00:10:13.635
+cryptogram. Lectures 4 and 5.
+
+123
+00:10:13.985 --> 00:10:16.033
+Let's remember five lines.
+
+124
+00:10:16.383 --> 00:10:19.694
+A message is a type, a bitmap, and fields.
+
+125
+00:10:20.044 --> 00:10:23.884
+The switch number is the field number, counted from the left.
+
+126
+00:10:24.234 --> 00:10:29.478
+Each half of 4 switches is one hex digit, worth 8, 4, 2, 1.
+
+127
+00:10:29.828 --> 00:10:35.503
+The amount is whole paise, 12 digits, with the currency in field 49.
+
+128
+00:10:35.853 --> 00:10:43.721
+The answer 0110 copies field 11, and field 39 = 00 means yes.
+
+129
+00:10:44.071 --> 00:10:49.664
+Last, six interview questions you can now answer. Try each one out loud.
+
+130
+00:10:50.014 --> 00:10:56.404
+Walk me through a card authorisation. What is an MTI, and what does 0110 mean?
+
+131
+00:10:56.404 --> 00:11:00.664
+How does the receiver know which fields are present?
+
+132
+00:11:01.014 --> 00:11:07.888
+Why are amounts sent in minor units? How is an answer matched to its question?
+
+133
+00:11:07.888 --> 00:11:10.973
+And when is a reversal (0400) sent?
+
+134
+00:11:11.323 --> 00:11:16.790
+Next is lecture 4: the tap, and what the card and the terminal say to each
+
+135
+00:11:16.790 --> 00:11:17.233
+other.

@@ -37,6 +37,7 @@
 //   pixels    an 8 x 8 picture; tap a dot to see and change its three bytes
 //   money     an amount stored as double / paise / DECIMAL / card-message field, and a running total (data-start)
 //   iso8583   a card authorisation request and answer: message type, bitmap, fields, chip data (TLV)
+//   bmbyte    one ISO 8583 bitmap row: switch number (= field, from the left) vs worth 8 4 2 1, to a hex byte (data-row)
 //   apdu      the commands a terminal sends to a chip card, byte by byte
 //   threeruns  the lesson 9 fight run three times with Java's exact Random: seed 7 vs new Random()
 //   seedmachine  java.util.Random with Java's exact formula, one roll at a time (data-seed, data-n, data-k)
@@ -1397,6 +1398,58 @@
     draw();
   }
 
+  // ---- one bitmap row: switch NUMBER (= field) vs switch WORTH, to one hex byte: <div data-widget="bmbyte" data-key data-row> ----
+  // His question, 21 Oct: "How are the switches numbered? ... which bit corresponds to each switch?"
+  function bmByteWidget(node) {
+    const key = node.dataset.key, HEX = '0123456789ABCDEF', W = [8, 4, 2, 1];
+    const msgOn = r => ISO.request.fields.map(f => f[0]).filter(f => f > r * 8 && f <= r * 8 + 8);
+    const fromMsg = r => { const on = msgOn(r); return Array.from({ length: 8 }, (_, i) => on.includes(r * 8 + i + 1) ? 1 : 0); };
+    if (!state[key]) { const r = Math.max(0, Math.min(7, Number(node.dataset.row || 1) - 1)); state[key] = { row: r, bits: fromMsg(r) }; }
+    const st = state[key];
+    function draw() {
+      node.innerHTML = ''; node.className = 'bitsbox hexbyte';
+      const first = st.row * 8 + 1;
+      const tabs = el('div', 'wrow');
+      tabs.append(el('span', 'worth', 'Bitmap row:'));
+      for (let r = 0; r < 8; r++) {
+        const b = btn(String(r + 1), st.row === r ? 'primary' : '', () => { st.row = r; st.bits = fromMsg(r); draw(); });
+        b.setAttribute('aria-label', 'Row ' + (r + 1) + ', fields ' + (r * 8 + 1) + ' to ' + (r * 8 + 8));
+        b.setAttribute('aria-pressed', st.row === r ? 'true' : 'false'); tabs.append(b);
+      }
+      node.append(tabs);
+      node.append(el('div', 'cnlabel', 'Row ' + (st.row + 1) + ' holds fields ' + first + ' to ' + (first + 7) + '. Each switch has TWO labels: its number (top, counted from the left) and its worth (bottom).'));
+      const halves = el('div', 'hexhalves'), sums = [0, 0], parts = [[], []];
+      [0, 1].forEach(h => {
+        const box = el('div', 'hexhalf'), row = el('div', 'bits'); row.style.setProperty('--n', 4);
+        for (let j = 0; j < 4; j++) {
+          const i = h * 4 + j, bit = st.bits[i], f = first + i;
+          if (bit) sums[h] += W[j];
+          parts[h].push(bit + '×' + W[j]);
+          const cell = el('div', 'bitcell');
+          const sw = el('button', 'bit' + (bit ? ' on' : ''), bit ? '1' : '0');
+          sw.type = 'button'; sw.setAttribute('aria-label', 'Switch ' + f + ' (field ' + f + '), worth ' + W[j] + ', ' + (bit ? 'on' : 'off'));
+          sw.addEventListener('click', () => { st.bits[i] = bit ? 0 : 1; draw(); });
+          cell.append(el('div', 'worth', '<b>#' + f + '</b>'), sw, el('div', 'worth', 'worth ' + W[j]));
+          row.append(cell);
+        }
+        box.append(el('div', 'cnlabel', h ? 'Right half' : 'Left half'), row, el('div', 'hexdigit', 'worth <b>' + sums[h] + '</b> → hex digit <b class="big">' + HEX[sums[h]] + '</b>'));
+        halves.append(box);
+      });
+      node.append(halves);
+      const on = st.bits.map((b, i) => b ? first + i : 0).filter(Boolean);
+      node.append(el('pre', '', esc(
+        'fields on:   ' + (on.length ? on.join(', ') : 'none') + '\n' +
+        'pattern:     ' + st.bits.slice(0, 4).join('') + ' ' + st.bits.slice(4).join('') + '\n' +
+        'left half:   ' + parts[0].join(' + ') + ' = ' + sums[0] + '  → ' + HEX[sums[0]] + '\n' +
+        'right half:  ' + parts[1].join(' + ') + ' = ' + sums[1] + '  → ' + HEX[sums[1]] + '\n' +
+        'the byte:    ' + HEX[sums[0]] + HEX[sums[1]])));
+      const same = st.bits.join('') === fromMsg(st.row).join('');
+      node.append(el('div', 'stepnote', same ? 'This is row ' + (st.row + 1) + ' of the ₹250 message above. Tap a switch to try your own pattern.' : 'Your own pattern. The message row is different.'));
+      if (!same) node.append(btn('Back to the message\'s row', '', () => { st.bits = fromMsg(st.row); draw(); }));
+    }
+    draw();
+  }
+
   // ---- one chip-card command, byte by byte: <div data-widget="apdu" data-key> ----
   const APDUS = [
     { name: 'SELECT the payment list', bytes: '00 A4 04 00 0E 32 50 41 59 2E 53 59 53 2E 44 44 46 30 31 00', data: 'The name 2PAY.SYS.DDF01 as text bytes: 32 is "2", 50 is "P", 41 is "A", 59 is "Y". Every contactless payment card answers to this name.', reply: 'the list of payment apps on the card' },
@@ -1789,7 +1842,7 @@
     draw();
   }
 
-  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget, overflow: overflowWidget, convert: convertWidget, gitplay: gitPlayWidget, roundline: roundLineWidget };
+  const makers = { bits: bitsWidget, intmem: intMemWidget, text: textWidget, rgb: rgbWidget, run: runWidget, calc: calcWidget, compound: compoundWidget, stepper: stepperWidget, flow: flowWidget, compare: compareWidget, loop: loopWidget, dice: diceWidget, logic: logicWidget, callstack: callstackWidget, cardnum: cardNumWidget, patterns: patternsWidget, hexbyte: hexByteWidget, pixels: pixelsWidget, money: moneyWidget, iso8583: iso8583Widget, bmbyte: bmByteWidget, apdu: apduWidget, seedmachine: seedMachineWidget, threeruns: threeRunsWidget, overflow: overflowWidget, convert: convertWidget, gitplay: gitPlayWidget, roundline: roundLineWidget };
 
   window.Lab = {
     marks: marksApi,

@@ -1078,6 +1078,9 @@ int move = keys.nextInt();</pre>
 <h3>The idea</h3>
 <p>Notes 1 and 2 drew the request as a speech bubble: "May I charge 250?". This note opens the bubble. The real thing is a short message in a format called <b>ISO 8583</b>, and almost every card payment in the world, at a shop or an ATM, travels as one of these between the shop's bank, the network and the card's bank.</p>
 <p>You already know everything you need to read one: digits, bytes, hex, and switches that mean "yes" or "no". This note is where those meet money.</p>
+<p><b>Watch this lecture</b> (about 11 minutes, captions on, made-up card and shop). Pause at each "your turn".</p>
+<video controls preload="none" playsinline style="width:100%;border-radius:10px" src="media/pay3-the-message.mp4"><track kind="captions" srclang="en" label="English" src="media/pay3-the-message.vtt"></video>
+<p class="muted">Only sound? Listen &amp; watch has the audio version for a walk.</p>
 
 <h3>Why such an odd format</h3>
 <p>ISO 8583 was designed when networks were slow and every byte cost money. The version most networks still build on is from <b>1987</b>. So the message has no labels and no spaces. Where a modern system would send <code>"amount": 250.00</code>, ISO 8583 sends 12 digits at a known position and both sides agree what they mean. Short, fast, and unreadable without the rule book. Each network (Visa, Mastercard, RuPay) publishes its own rule book on top of the standard, so their messages differ in details. This note shows the shape they share.</p>
@@ -1097,6 +1100,41 @@ int move = keys.nextInt();</pre>
 <p>This is the part that uses your bits and bytes. There are 128 possible fields, but a message carries only the 10 to 20 it needs. Instead of labelling each one, the message starts with 64 switches: switch 2 on means "field 2 is here", switch 3 off means "field 3 is not". Eight switches make a byte, so the 64 switches are 8 bytes, and written in hex that is 16 characters.</p>
 <p>Look at the first row of the bitmap in the diagram: switches 2, 3, 4 and 7 are on. As a pattern that is <code>0111 0010</code>. The left half is 7, the right half is 2, so the byte is hex <b>72</b>. If you can read that row, you can read any bitmap.</p>
 <p>Switch 1 is special. When it is on, a <b>second</b> bitmap follows for fields 65 to 128. Our message needs none of those, so switch 1 is off.</p>
+<h3>Which switch is which bit (your question, 21 October)</h3>
+<p class="asked">"How are the switches numbered in the diagram? If switches 2, 3, 4, and 7 are ON, how does that produce the binary pattern 0111 0010? Can you explain which bit corresponds to each switch?"</p>
+<p>Every switch has <b>two labels</b>. Its <b>number</b> is counted from the left, starting at 1, and it is the field number. Its <b>worth</b> is what it adds when you read the byte as a number.</p>
+<p>The number tells you <i>which field</i>. The worth is only used to turn the pattern into hex.</p>
+<svg viewBox="0 0 380 250" width="100%" style="max-width:520px;display:block;margin:10px 0" role="img" aria-label="Row 1 of the bitmap: switches numbered 1 to 8 from the left; 2, 3, 4 and 7 are on; left half 0111 is worth 4+2+1 = 7, right half 0010 is worth 2, so the byte is hex 72" font-family="system-ui, sans-serif" fill="currentColor"><text x="14" y="16" font-size="12" opacity=".75">switch number = field number, counted from the LEFT →</text><text x="32" y="40" font-size="13" text-anchor="middle" font-weight="700">#1</text><rect x="14" y="48" width="36" height="36" rx="7" fill="none" stroke="currentColor" stroke-opacity=".5"/><text x="32" y="72" font-size="17" text-anchor="middle" font-weight="700" >0</text><text x="32" y="102" font-size="12" text-anchor="middle" opacity=".75">worth 8</text><text x="74" y="40" font-size="13" text-anchor="middle" font-weight="700">#2</text><rect x="56" y="48" width="36" height="36" rx="7" fill="#e0805f" stroke="currentColor" stroke-opacity=".5"/><text x="74" y="72" font-size="17" text-anchor="middle" font-weight="700" fill="#fff">1</text><text x="74" y="102" font-size="12" text-anchor="middle" opacity=".75">worth 4</text><text x="116" y="40" font-size="13" text-anchor="middle" font-weight="700">#3</text><rect x="98" y="48" width="36" height="36" rx="7" fill="#e0805f" stroke="currentColor" stroke-opacity=".5"/><text x="116" y="72" font-size="17" text-anchor="middle" font-weight="700" fill="#fff">1</text><text x="116" y="102" font-size="12" text-anchor="middle" opacity=".75">worth 2</text><text x="158" y="40" font-size="13" text-anchor="middle" font-weight="700">#4</text><rect x="140" y="48" width="36" height="36" rx="7" fill="#e0805f" stroke="currentColor" stroke-opacity=".5"/><text x="158" y="72" font-size="17" text-anchor="middle" font-weight="700" fill="#fff">1</text><text x="158" y="102" font-size="12" text-anchor="middle" opacity=".75">worth 1</text><text x="218" y="40" font-size="13" text-anchor="middle" font-weight="700">#5</text><rect x="200" y="48" width="36" height="36" rx="7" fill="none" stroke="currentColor" stroke-opacity=".5"/><text x="218" y="72" font-size="17" text-anchor="middle" font-weight="700" >0</text><text x="218" y="102" font-size="12" text-anchor="middle" opacity=".75">worth 8</text><text x="260" y="40" font-size="13" text-anchor="middle" font-weight="700">#6</text><rect x="242" y="48" width="36" height="36" rx="7" fill="none" stroke="currentColor" stroke-opacity=".5"/><text x="260" y="72" font-size="17" text-anchor="middle" font-weight="700" >0</text><text x="260" y="102" font-size="12" text-anchor="middle" opacity=".75">worth 4</text><text x="302" y="40" font-size="13" text-anchor="middle" font-weight="700">#7</text><rect x="284" y="48" width="36" height="36" rx="7" fill="#e0805f" stroke="currentColor" stroke-opacity=".5"/><text x="302" y="72" font-size="17" text-anchor="middle" font-weight="700" fill="#fff">1</text><text x="302" y="102" font-size="12" text-anchor="middle" opacity=".75">worth 2</text><text x="344" y="40" font-size="13" text-anchor="middle" font-weight="700">#8</text><rect x="326" y="48" width="36" height="36" rx="7" fill="none" stroke="currentColor" stroke-opacity=".5"/><text x="344" y="72" font-size="17" text-anchor="middle" font-weight="700" >0</text><text x="344" y="102" font-size="12" text-anchor="middle" opacity=".75">worth 1</text><path d="M14 112 v8 H176 v-8" fill="none" stroke="currentColor" stroke-opacity=".6"/><text x="95" y="138" font-size="13" text-anchor="middle">0×8 + 1×4 + 1×2 + 1×1</text><text x="95" y="156" font-size="13" text-anchor="middle" font-weight="700">= 7 → hex 7</text><path d="M200 112 v8 H362 v-8" fill="none" stroke="currentColor" stroke-opacity=".6"/><text x="281" y="138" font-size="13" text-anchor="middle">0×8 + 0×4 + 1×2 + 0×1</text><text x="281" y="156" font-size="13" text-anchor="middle" font-weight="700">= 2 → hex 2</text><text x="190" y="200" font-size="15" text-anchor="middle">fields 2, 3, 4, 7 on  →  0111 0010  →</text><text x="190" y="232" font-size="24" text-anchor="middle" font-weight="800" fill="#e0805f">hex 72</text></svg>
+<p><b>Step 1.</b> Write one bit per switch, left to right. On is 1, off is 0.</p>
+<pre>switch:  1  2  3  4 | 5  6  7  8
+on?      -  ✓  ✓  ✓ | -  -  ✓  -
+bit:     0  1  1  1 | 0  0  1  0</pre>
+<p><b>Step 2.</b> Split into two halves of 4. Each half uses the worths 8, 4, 2, 1, the same as the hex box in the bits and bytes note (section 1b).</p>
+<pre>left half   0 1 1 1
+worth       8 4 2 1
+0×8 + 1×4 + 1×2 + 1×1
+= 0 + 4 + 2 + 1
+= 7   → hex digit 7
+
+right half  0 0 1 0
+worth       8 4 2 1
+0×8 + 0×4 + 1×2 + 0×1
+= 2   → hex digit 2
+
+the byte  = 72</pre>
+<p><b>Why it felt backwards.</b> In the bits and bytes note you added up worths from the <i>right</i> (1, 2, 4, 8…). The bitmap counts its switch <i>numbers</i> from the <i>left</i>. Both are true at once: switch 1 is the leftmost one, and in the full byte it is worth 128. The standard reads it this way too: Wikipedia's ISO 8583 page says hex 82 = 1000 0010 means fields 1 and 7.</p>
+<p><b>Try it.</b> Row 1 is shown. Tap the row numbers to see the other 7 rows of the ₹250 message, or tap switches to make your own pattern.</p>
+<div data-widget="bmbyte" data-key="pay3-bmbyte" data-row="1"></div>
+<p><b>Your turn.</b> Row 2 holds fields 9 to 16. In our message fields 11 and 14 are on. Write the pattern and the hex byte before you open the answer.</p>
+<details><summary>Row 2: fields 11 and 14 are on. What is the pattern, and the hex byte?</summary><p>Fields 9 to 16 are switches #9 to #16. Field 11 is the 3rd switch of the row, field 14 the 6th.</p>
+<pre>switch:  9 10 11 12 | 13 14 15 16
+bit:     0  0  1  0 |  0  1  0  0
+left  0010 = 0×8 + 0×4 + 1×2 + 0×1 = 2
+right 0100 = 0×8 + 1×4 + 0×2 + 0×1 = 4
+the byte = 24</pre></details>
+<p><b>Listen.</b> The same answer, spoken, about two minutes:</p>
+<audio controls preload="none" style="width:100%" src="media/pay3-bitmap-switches.mp3"><track kind="captions" srclang="en" label="English" src="media/pay3-bitmap-switches.vtt" default></audio>
+<p>All 8 rows of the question, as the bitmap travels: <code>72 24 04 80 08 E0 82 00</code>, written together <code>7224048008E08200</code>.</p>
 
 <h3>Lengths: fixed or told</h3>
 <p>Because there are no labels, the reader must know where each field ends. Two ways:</p>
@@ -2153,6 +2191,7 @@ System.out.println(used + amount &gt; limit);   // prints false</pre>
 <p>You asked about a particular system you use at work. This site is public, so the answer about that system, with what its code actually does, is in your work notebook instead.</p>
 
 <h3>What to remember</h3>
+<p class="asked">You marked this section on 15 and 21 October: "How do banks processes decimals?" The answer is section 7, just above: the money box shows 0.10 added 10 times going wrong in a <code>double</code> and staying exact in paise.</p>
 <ul>
 <li>A bit is one switch. A byte is 8 bits. An <code>int</code> is 4 bytes.</li>
 <li>Memory is a long row of numbered byte cells.</li>

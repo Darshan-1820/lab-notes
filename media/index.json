@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": "pay3-the-message",
+    "title": "Payments 3: What the request carries (ISO 8583)",
+    "topic": "Payments · lecture 3",
+    "lesson": "pay-the-message",
+    "public": true,
+    "audio": "media/pay3-the-message.mp3",
+    "captions": "media/pay3-the-message.vtt",
+    "audioSeconds": 678,
+    "updated": "2026-10-21",
+    "video": "media/pay3-the-message.mp4",
+    "videoSeconds": 678
+  },
+  {
+    "id": "pay3-bitmap-switches",
+    "title": "Your question: which switch is which bit (ISO 8583 bitmap)",
+    "topic": "Payments · lecture 3",
+    "lesson": "pay-the-message",
+    "public": true,
+    "audio": "media/pay3-bitmap-switches.mp3",
+    "captions": "media/pay3-bitmap-switches.vtt",
+    "audioSeconds": 84,
+    "updated": "2026-10-21",
+    "video": "media/pay3-bitmap-switches.mp4",
+    "videoSeconds": 84
+  }
+]
