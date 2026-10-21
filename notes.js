@@ -1132,8 +1132,21 @@ bit:     0  0  1  0 |  0  1  0  0
 left  0010 = 0×8 + 0×4 + 1×2 + 0×1 = 2
 right 0100 = 0×8 + 1×4 + 0×2 + 0×1 = 4
 the byte = 24</pre></details>
-<p><b>Listen.</b> The same answer, spoken, about two minutes:</p>
-<audio controls preload="none" style="width:100%" src="media/pay3-bitmap-switches.mp3"><track kind="captions" srclang="en" label="English" src="media/pay3-bitmap-switches.vtt" default></audio>
+<p><b>Your turn, the other way.</b> Now go from hex back to fields. Row 6 of our message is hex <code>E0</code>. Which fields are on?</p>
+<details><summary>Row 6 is hex E0. Which fields?</summary><p>Row 6 starts at field 41, because each row holds 8 fields:</p>
+<pre>row 6 starts at  8 × (6 − 1) + 1
+               = 8 × 5 + 1
+               = 41
+
+E = 14 = 8 + 4 + 2 → 1110
+0 = 0             → 0000
+pattern  1 1 1 0 | 0 0 0 0
+switch  41 42 43 44 | 45 46 47 48
+
+fields on: 41, 42, 43</pre><p>Terminal, shop and shop name. Check it in the message diagram above: row 6 has 41, 42 and 43 lit.</p></details>
+<p><b>Watch.</b> The same answer with the diagram and captions, about a minute and a half (85 seconds):</p>
+<video controls preload="none" playsinline style="width:100%;border-radius:10px" src="media/pay3-bitmap-switches.mp4"><track kind="captions" srclang="en" label="English" src="media/pay3-bitmap-switches.vtt" default></video>
+<p class="muted">Sound only, for a walk: <a href="media/pay3-bitmap-switches.mp3">play the audio</a>.</p>
 <p>All 8 rows of the question, as the bitmap travels: <code>72 24 04 80 08 E0 82 00</code>, written together <code>7224048008E08200</code>.</p>
 
 <h3>Lengths: fixed or told</h3>
@@ -1202,7 +1215,8 @@ the byte = 24</pre></details>
 <details><summary>Field 4 says 000000150075 and field 49 says 356. How much is the payment?</summary><p>150075 paise, which is ₹1,500.75.</p></details>
 <details><summary>The answer to a payment comes back with field 39 = 51. What happened?</summary><p>Refused: not enough money in the account (or over the credit limit).</p></details>
 <details><summary>The shop's bank has sent thousands of questions and answers arrive in any order. How does it know which question an answer belongs to?</summary><p>By the trace number, field 11 (together with the terminal and the time). The answer copies it from the question.</p></details>
-<details><summary>Why does field 2 have a length in front of it, but field 4 does not?</summary><p>Card numbers can have different lengths, so the reader has to be told. The amount is always exactly 12 digits, so its length is in the rule book.</p></details>`,
+<details><summary>Why does field 2 have a length in front of it, but field 4 does not?</summary><p>Card numbers can have different lengths, so the reader has to be told. The amount is always exactly 12 digits, so its length is in the rule book.</p></details>
+<p><b>Next:</b> <a href="#pay3-interview">Lecture 3, extra: interview answers and words used at work</a>.</p>`,
   },
   {
     id: 'pay-the-tap',
@@ -1280,6 +1294,63 @@ the byte = 24</pre></details>
 <details><summary>An answer from the card ends in 6A 82. What does that mean?</summary><p>"Not found": the card has no app or file by that name. 90 00 would have meant success.</p></details>
 <details><summary>Split this TLV packet: 5F2A 02 0356.</summary><p>Tag 5F2A (the currency), length 2 bytes, value 0356: the Indian rupee, code 356.</p></details>
 <details><summary>How do the chip's answers end up at the card's bank?</summary><p>The terminal copies them into field 55 of the ISO 8583 message, as a TLV list.</p></details>`,
+  },
+
+  {
+    id: 'pay3-interview',
+    kind: 'payments', order: 3.5,
+    date: '2026-10-21',
+    title: 'Lecture 3, extra: interview answers and words used at work',
+    from: 'Payments note 3, follow-up',
+    html: `
+<h3>How to use this page</h3>
+<p>The lecture 3 video ends with six interview questions. Say your answer out loud first. Then open the model answer and compare.</p>
+<p>Each answer has the line an interviewer usually asks next.</p>
+
+<h3>The six questions</h3>
+<details><summary>1. Walk me through a card authorisation.</summary><pre>1. The card is tapped. The terminal reads the chip.
+2. The terminal sends the request to the shop's bank (acquirer).
+3. The acquirer sends a 0100 to the network.
+4. The network reads the first digits (BIN) and routes to the card's bank (issuer).
+5. The issuer checks: real card (cryptogram), enough money, risk.
+6. The issuer answers 0110 with field 39. 00 = approved.
+7. The answer goes back the same way. The terminal beeps.</pre><p>Say also: <b>no money has moved yet.</b> The issuer only puts a hold on the money. Money moves later in clearing and settlement (lecture 7).</p><p class="muted">They ask next: "What is a hold, and what if the shop never captures it?"</p></details>
+<details><summary>2. What is an MTI? What does 0110 mean?</summary><pre>MTI = message type indicator, 4 digits
+digit 1  version      0 = 1987
+digit 2  class        1 = authorisation
+digit 3  function     1 = response
+digit 4  origin       0 = acquirer side
+0110 = the answer to an authorisation request</pre><p class="muted">They ask next: "And 0120?" Digit 3 = 2 means an <b>advice</b>: "this already happened, note it".</p></details>
+<details><summary>3. How does the receiver know which fields are present?</summary><p>From the bitmap. 64 bits after the MTI. Bit n on means field n is in the message. Bit 1 on means a second bitmap follows, for fields 65 to 128.</p><pre>hex 72 = 0111 0010 → fields 2, 3, 4, 7</pre><p class="muted">They ask next: "And how does it know where a field ends?" Fixed length from the spec, or a length prefix (LLVAR, LLLVAR).</p></details>
+<details><summary>4. Why are amounts sent in minor units?</summary><p>So the amount is an exact whole number. No decimal point, no <code>double</code>, no rounding error.</p><pre>₹250.00 → 25000 paise → 000000025000
+the currency (field 49) says how many digits are after the point:
+INR 2 · JPY 0 · KWD 3</pre><p class="muted">They ask next: "How do you store money in your database?" Whole minor units in a <code>BIGINT</code>, or <code>DECIMAL</code>. Never a float.</p></details>
+<details><summary>5. How is an answer matched to its question?</summary><p>The answer copies the question's trace number (STAN, field 11). The acquirer matches it together with the terminal / acquirer id and the time (field 7).</p><p class="muted">They ask next: "Is the STAN unique?" No. It is only 6 digits and wraps around after 999999. That is why it is matched together with other fields.</p></details>
+<details><summary>6. When is a reversal (0400) sent?</summary><p>When the shop's side cannot finish a payment the issuer may have approved, so the issuer must release the hold:</p><pre>- no answer came in time (timeout)
+- the answer came too late, after the terminal gave up
+- the terminal failed after approval
+- the sale was cancelled right after approval</pre><p>In practice it is often sent as an <b>advice, 0420</b>: "this is cancelled, note it". It is sent again and again until the issuer acknowledges it with 0430.</p><p class="muted">They ask next: "Why is a timeout dangerous?" You do not know if the customer was charged. You never just retry the payment: you reverse, or ask for its status first.</p></details>
+
+<h3>Words people use at work</h3>
+<div class="tablewrap"><table class="plain">
+<tr><th>They say</th><th>It means</th></tr>
+<tr><td>"bit 2", "DE 2"</td><td>field 2. Bit n of the bitmap = data element n.</td></tr>
+<tr><td>primary / secondary bitmap</td><td>the first 64 bits (fields 1–64) / the second 64 (fields 65–128), present only when bit 1 is on</td></tr>
+<tr><td>0400 / 0420</td><td>reversal request / reversal advice. 0430 is the acknowledgement of a 0420.</td></tr>
+<tr><td>MTI digit 3</td><td>0 request · 1 response · 2 advice · 3 advice response</td></tr>
+<tr><td>MTI digit 4</td><td>0 acquirer · 1 acquirer repeat · 2 issuer · 3 issuer repeat</td></tr>
+</table></div>
+
+<h3>Which number do I give the bank?</h3>
+<p>A payment collects several reference numbers. They are not the same thing.</p>
+<div class="tablewrap"><table class="plain">
+<tr><th>Number</th><th>Given by, when</th><th>Used for</th></tr>
+<tr><td>STAN, field 11</td><td>the sender, per message, 6 digits</td><td>matching an answer to its question; finding a reversal</td></tr>
+<tr><td>RRN, field 37</td><td>the shop's bank, at authorisation, 12 characters</td><td>finding the payment later; the fallback when there is no ARN</td></tr>
+<tr><td>ARN</td><td>the shop's bank, at clearing (after the day ends)</td><td>tracing a <b>refund</b> or a dispute on Visa and Mastercard</td></tr>
+</table></div>
+<p>So a refund is traced by the ARN where the network has one, not by the RRN. The lecture 3 diagram said the RRN "stays the same through refunds and disputes"; that was too strong, and the diagram now says it more carefully. Refunds get their full lecture in note 9. (Source: Stripe support, "How to trace a refund using reference numbers".)</p>
+`,
   },
 
   // ======================= questions he asked =======================

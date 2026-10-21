@@ -17,41 +17,41 @@ That number is the field number.
 And its worth: 8, 4, 2, 1, in each half. The worth is only for writing the hex.
 
 5
-00:00:22.156 --> 00:00:33.324
+00:00:22.156 --> 00:00:33.307
 One bit per switch, left to right. 1 off: 0. 2, 3, 4 on: 111. 5, 6 off: 00. 7
 
 6
-00:00:33.324 --> 00:00:35.645
+00:00:33.307 --> 00:00:35.624
 on: 1. 8 off: 0.
 
 7
-00:00:35.995 --> 00:00:43.057
+00:00:35.974 --> 00:00:43.036
 Left half 0111: 0×8 + 1×4 + 1×2 + 1×1 = 7.
 
 8
-00:00:43.407 --> 00:00:48.251
+00:00:43.386 --> 00:00:48.230
 Right half 0010: only the 2 is on = 2.
 
 9
-00:00:48.601 --> 00:00:51.289
+00:00:48.580 --> 00:00:51.268
 Side by side: hex 72.
 
 10
-00:00:51.639 --> 00:00:56.758
+00:00:51.618 --> 00:00:56.737
 It felt backwards because in the bits note you counted the worth from the right.
 
 11
-00:00:56.758 --> 00:01:00.725
+00:00:56.737 --> 00:01:00.704
 The switch number counts from the left. Both are true at once.
 
 12
-00:01:01.075 --> 00:01:08.512
+00:01:01.054 --> 00:01:08.491
 Your turn. Row 2 holds fields 9 to 16. Fields 11 and 14 are on. Pause and work
 
 13
-00:01:08.512 --> 00:01:09.751
+00:01:08.491 --> 00:01:09.730
 out the byte.
 
 14
-00:01:12.751 --> 00:01:23.835
+00:01:19.730 --> 00:01:30.813
 Field 11 is the 3rd switch, field 14 the 6th. 0010 0100. 2 and 4: hex 24.

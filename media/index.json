@@ -7,10 +7,10 @@
     "public": true,
     "audio": "media/pay3-the-message.mp3",
     "captions": "media/pay3-the-message.vtt",
-    "audioSeconds": 678,
+    "audioSeconds": 797,
     "updated": "2026-10-21",
     "video": "media/pay3-the-message.mp4",
-    "videoSeconds": 678
+    "videoSeconds": 797
   },
   {
     "id": "pay3-bitmap-switches",
@@ -20,9 +20,9 @@
     "public": true,
     "audio": "media/pay3-bitmap-switches.mp3",
     "captions": "media/pay3-bitmap-switches.vtt",
-    "audioSeconds": 84,
+    "audioSeconds": 91,
     "updated": "2026-10-21",
     "video": "media/pay3-bitmap-switches.mp4",
-    "videoSeconds": 84
+    "videoSeconds": 91
   }
 ]
